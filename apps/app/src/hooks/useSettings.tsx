@@ -18,7 +18,7 @@ export function useSettings() {
     const [topP, setTopP] = useState(DEFAULT_AI_CONFIG.top_p);
     const [presencePenalty, setPresencePenalty] = useState(DEFAULT_AI_CONFIG.presence_penalty);
     const [frequencyPenalty, setFrequencyPenalty] = useState(DEFAULT_AI_CONFIG.frequency_penalty);
-    const [stopSequences, setStopSequences] = useState(DEFAULT_AI_CONFIG.stop.join(", "));
+    const [stopSequences, setStopSequences] = useState(() => DEFAULT_AI_CONFIG.stop.join(", "));
     const [context, setContext] = useState<AIContext>({ ...DEFAULT_AI_CONFIG.context });
 
     useEffect(() => {
@@ -63,7 +63,7 @@ export function useSettings() {
             top_p: topP,
             presence_penalty: presencePenalty,
             frequency_penalty: frequencyPenalty,
-            stop: stopSequences.split(",").map((s : string) => s.trim()).filter(Boolean),
+            stop: stopSequences.split(",").map((s: string) => s.trim()).filter(Boolean),
             context,
         };
         localStorage.setItem("customAIConfig", JSON.stringify(config));
@@ -83,7 +83,7 @@ export function useSettings() {
         localStorage.setItem("customPrompt", customPrompt);
         alert("Custom prompt saved!");
     };
-    
+
     return {
         activeTab,
         setActiveTab,

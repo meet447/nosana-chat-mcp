@@ -100,7 +100,7 @@ const ChatMessageList = memo(
       >
         {conversations.map((msg: any, i: number) => (
           <ChatMessage
-            key={i}
+            key={msg.id || i}
             msg={msg}
             index={i}
             conversations={conversations}
@@ -156,7 +156,7 @@ const ChatMessageList = memo(
               >
                 <ReactMarkdown
                   remarkPlugins={[remarkGfm]}
-                  rehypePlugins={[rehypeHighlight]}
+                  rehypePlugins={[[rehypeHighlight, { ignoreMissing: true }]]}
                   components={markdownComponents}
                 >
                   {llmContent}

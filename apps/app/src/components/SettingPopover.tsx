@@ -39,8 +39,9 @@ const CustomPromptTab = () => {
 
   return (
     <div className="flex flex-col gap-4 mx-auto">
-      <label className="font-medium text-sm">Custom Prompt:</label>
+      <label htmlFor="custom-prompt-textarea" className="font-medium text-sm">Custom Prompt:</label>
       <textarea
+        id="custom-prompt-textarea"
         value={customPrompt}
         onChange={(e) => setCustomPrompt(e.target.value)}
         className="border border-muted-foreground/20 bg-background/30 h-52 rounded-lg p-3 w-full resize-none focus:outline-none focus:ring-2 focus:ring-green-500/50 transition-colors"
@@ -54,7 +55,7 @@ const CustomPromptTab = () => {
       </button>
 
       <div className="mt-2">
-        <label className="font-medium text-sm">Quick Prompt Templates:</label>
+        <span className="font-medium text-sm">Quick Prompt Templates:</span>
         <div className="flex flex-wrap gap-2 mt-3">
           {QUICK_TEMPLATES.map((template) => (
             <button
@@ -71,6 +72,8 @@ const CustomPromptTab = () => {
   );
 };
 
+const EMPTY_V_LABELS: string[] = [];
+
 const SliderControl = ({
   label,
   value,
@@ -78,7 +81,7 @@ const SliderControl = ({
   min,
   max,
   step = 0.01,
-  valueLabels = []
+  valueLabels = EMPTY_V_LABELS
 }: {
   label: string;
   value: number;
@@ -415,7 +418,7 @@ const TabButton = ({ tab, isActive, onClick }: { tab: Tab; isActive: boolean; on
   </button>
 );
 
-function  SettingPopover({ open, setOpen }: { open: boolean; setOpen: (open: boolean) => void }) {
+function SettingPopover({ open, setOpen }: { open: boolean; setOpen: (open: boolean) => void }) {
   const { activeTab, setActiveTab } = useSettings();
 
   const renderActiveTab = () => {
@@ -455,7 +458,10 @@ function  SettingPopover({ open, setOpen }: { open: boolean; setOpen: (open: boo
           </DialogHeader>
 
           <div>
-            {renderActiveTab()}
+            {activeTab === "Custom Prompt" && <CustomPromptTab />}
+            {activeTab === "Custom Configs" && <CustomConfigsTab />}
+            {activeTab === "Additional Setting" && <AdditionalSettingsTab />}
+            {activeTab === "API Keys" && <ApiKeysTab />}
           </div>
         </div>
       </DialogContent>

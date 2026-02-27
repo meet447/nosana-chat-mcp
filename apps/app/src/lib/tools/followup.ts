@@ -38,11 +38,18 @@ export const getFollowUpQuestions = async (
     });
 
     const content = response.choices[0]?.message?.content || "[]";
-    let followUps = JSON.parse(content);
-
-    // Handle cases where the model returns { "questions": [...] } or just the array
-    if (!Array.isArray(followUps) && followUps.questions) {
-      followUps = followUps.questions;
+    let followUps = [];
+    try {
+      followUps = JSON.parse(content);
+      // Handle cases where the model returns { "questions": [...] } or just the array
+      if (!Array.isArray(followUps) && followUps.questions) {
+        followUps = followUps.questions;
+      }
+      if (!Array.isArray(followUps)) {
+        followUps = [];
+      }
+    } catch (parseError) {
+      console.warn("Failed to parse follow up questions:", parseError);
     }
 
     send("followUp", JSON.stringify(followUps));

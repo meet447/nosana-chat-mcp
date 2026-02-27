@@ -16,21 +16,21 @@ const gpuList = [
 ];
 
 export default function DummyGpuFrontend() {
-    const { wallet, connectWallet, isConnected } = useWalletStore(); // Add isConnected
+  const { wallet, connectWallet, isConnected } = useWalletStore(); // Add isConnected
 
-    const [selectedGpu, setSelectedGpu] = useState<string | null>(null);
-    const [minutes, setMinutes] = useState<number>(10);
-    const [jobId, setJobId] = useState<string>("");
-    const [extendMinutes, setExtendMinutes] = useState<number>(10);
-    const [loading, setLoading] = useState(false);
-    const [jobs, setJobs] = useState<any[]>([]);
+  const [selectedGpu, setSelectedGpu] = useState<string | null>(null);
+  const [minutes, setMinutes] = useState<number>(10);
+  const [jobId, setJobId] = useState<string>("");
+  const [extendMinutes, setExtendMinutes] = useState<number>(10);
+  const [loading, setLoading] = useState(false);
+  const [jobs, setJobs] = useState<any[]>([]);
 
-    useEffect(() => {
-      const { checkPhantom, verifyConnection } = useWalletStore.getState();
-      checkPhantom();
-      // optional delayed recheck
-      setTimeout(verifyConnection, 1000);
-    }, []);
+  useEffect(() => {
+    const { checkPhantom, verifyConnection } = useWalletStore.getState();
+    checkPhantom();
+    // optional delayed recheck
+    setTimeout(verifyConnection, 1000);
+  }, []);
 
   // ------------------- FIXED WALLET CHECK -------------------
   async function ensureWallet() {
@@ -219,8 +219,9 @@ export default function DummyGpuFrontend() {
         </div>
 
         <div className="flex flex-col items-center gap-2">
-          <label>Run Time (minutes)</label>
+          <label htmlFor="runtime-minutes">Run Time (minutes)</label>
           <input
+            id="runtime-minutes"
             type="number"
             value={minutes}
             onChange={(e) => setMinutes(Number(e.target.value))}
@@ -299,7 +300,7 @@ export default function DummyGpuFrontend() {
                       {job.logs?.length ? (
                         <div className="max-h-32 overflow-y-auto space-y-1">
                           {job.logs.slice(0, 50).map((l: string, i: number) => (
-                            <div key={i}>› {l}</div>
+                            <div key={`${i}-${l.substring(0, 30)}`}>› {l}</div>
                           ))}
                         </div>
                       ) : (

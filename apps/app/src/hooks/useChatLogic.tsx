@@ -401,7 +401,12 @@ export function useChatLogic() {
 
           for (const { event: eventType, data: dataRaw } of events) {
             try {
-              const data = JSON.parse(dataRaw);
+              let data;
+              try {
+                data = JSON.parse(dataRaw);
+              } catch {
+                data = dataRaw;
+              }
               //handling various events
               switch (eventType) {
                 case "thinking": {
@@ -433,7 +438,11 @@ export function useChatLogic() {
                   break;
 
                 case "searchResult":
-                  searchResult = JSON.parse(data);
+                  try {
+                    searchResult = typeof data === "string" ? JSON.parse(data) : data;
+                  } catch (e) {
+                    console.error("Failed to parse searchResult:", e);
+                  }
                   break;
 
                 //stream based error handling

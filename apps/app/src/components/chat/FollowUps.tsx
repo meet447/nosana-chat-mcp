@@ -7,8 +7,11 @@ const FollowUP = ({ followUPs, setQuery, textareaRef }: { followUPs: { question:
             <div className="flex flex-col gap-2">
                 {followUPs.map((item, index) => (
                     <div
-                        key={index}
+                        key={item.question || index}
+                        role="button"
+                        tabIndex={0}
                         onClick={() => { setQuery(item.question); textareaRef.current?.focus(); }}
+                        onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { setQuery(item.question); textareaRef.current?.focus(); e.preventDefault(); } }}
                         className="text-muted-foreground/50 w-fit group flex hover:border-muted-foreground/5 hover:bg-muted-foreground/6 justify-between items-center bg-muted-foreground/5 border border-muted-foreground/5 rounded-md cursor-pointer border-dashed p-2 text-sm animate-in fade-in-0 slide-in-from-bottom-3 duration-300 fill-mode-both"
                         style={{ animationDelay: `${index * 150}ms` }}
                     >
@@ -18,7 +21,7 @@ const FollowUP = ({ followUPs, setQuery, textareaRef }: { followUPs: { question:
                         </span>
                     </div>
                 ))}
-            </div> 
+            </div>
         </div>
     )
 }
