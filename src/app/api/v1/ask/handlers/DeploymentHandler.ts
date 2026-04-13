@@ -140,12 +140,34 @@ function resolveToolName(
 interface TraceEvent {
   type: "thinking" | "tool_start" | "tool_result" | "tool_error" | "text";
   toolName?: string;
+  traceId?: string;
+  toolCallId?: string;
   toolArgs?: Record<string, unknown>;
   toolResult?: unknown;
   error?: string;
   content?: string;
   timestamp: number;
   duration?: number;
+}
+
+function getChunkToolCallId(chunk: unknown): string | undefined {
+  const maybeChunk = chunk as Record<string, unknown> | null;
+  if (!maybeChunk) return undefined;
+
+  const candidates = [
+    maybeChunk.toolCallId,
+    maybeChunk.tool_call_id,
+    maybeChunk.callId,
+    maybeChunk.id,
+  ];
+
+  for (const candidate of candidates) {
+    if (typeof candidate === "string" && candidate.trim()) {
+      return candidate.trim();
+    }
+  }
+
+  return undefined;
 }
 
 export const handleDeployment = async (
@@ -206,6 +228,9 @@ export const handleDeployment = async (
         "stopJob",
       ]);
       const seenSanitizedToolStarts = new Set<string>();
+      const pendingToolStartsByCallId = new Map<string, TraceEvent>();
+      const pendingToolStartsByName = new Map<string, TraceEvent[]>();
+      let traceCounter = 0;
 
       const normalizeChats = (chats: any[] = []): any[] => {
         const validChats = chats
@@ -362,14 +387,24 @@ ${payload.customPrompt || ""}`.trim(),
 
               usedTools.add(tool.name);
               const toolArgs = (chunk as any).args;
+              const toolCallId = getChunkToolCallId(chunk);
               const toolStartEvent: TraceEvent = {
                 type: "tool_start",
                 toolName: tool.name,
+                traceId: `${tool.name}-${++traceCounter}`,
+                ...(toolCallId ? { toolCallId } : {}),
                 toolArgs,
                 timestamp: Date.now(),
               };
-              traceEvents.push(toolStartEvent);
-              send("trace", JSON.stringify(toolStartEvent));
+
+              if (toolCallId) {
+                pendingToolStartsByCallId.set(toolCallId, toolStartEvent);
+              }
+              const pendingByName = pendingToolStartsByName.get(tool.name) || [];
+              pendingByName.push(toolStartEvent);
+              pendingToolStartsByName.set(tool.name, pendingByName);
+
+              sendTrace(toolStartEvent);
               send("event", `executing: ${tool.name}`);
               console.log(`🧰 Tool started: ${tool.name}`);
             }
@@ -386,24 +421,50 @@ ${payload.customPrompt || ""}`.trim(),
                 break;
               }
 
-              const lastTraceEvent = traceEvents
-                .filter(
-                  (e) => e.type === "tool_start" && e.toolName === tool.name,
-                )
-                .pop();
+              const toolCallId = getChunkToolCallId(chunk);
+              let startTraceEvent: TraceEvent | undefined;
 
-              if (lastTraceEvent) {
-                send(
-                  "trace",
-                  JSON.stringify({
-                    type: "tool_result",
-                    toolName: tool.name,
-                    toolResult: chunk.output,
-                    timestamp: Date.now(),
-                    duration: Date.now() - lastTraceEvent.timestamp,
-                  }),
-                );
+              if (toolCallId) {
+                startTraceEvent = pendingToolStartsByCallId.get(toolCallId);
+                pendingToolStartsByCallId.delete(toolCallId);
+
+                if (startTraceEvent) {
+                  const pendingByName =
+                    pendingToolStartsByName.get(tool.name) || [];
+                  pendingToolStartsByName.set(
+                    tool.name,
+                    pendingByName.filter(
+                      (event) => event.traceId !== startTraceEvent?.traceId,
+                    ),
+                  );
+                }
               }
+
+              if (!startTraceEvent) {
+                const pendingByName = pendingToolStartsByName.get(tool.name) || [];
+                startTraceEvent = pendingByName.shift();
+                pendingToolStartsByName.set(tool.name, pendingByName);
+
+                if (startTraceEvent?.toolCallId) {
+                  pendingToolStartsByCallId.delete(startTraceEvent.toolCallId);
+                }
+              }
+
+              sendTrace({
+                type: "tool_result",
+                toolName: tool.name,
+                traceId: startTraceEvent?.traceId || `${tool.name}-${++traceCounter}`,
+                ...(toolCallId
+                  ? { toolCallId }
+                  : startTraceEvent?.toolCallId
+                    ? { toolCallId: startTraceEvent.toolCallId }
+                    : {}),
+                toolResult: chunk.output,
+                timestamp: Date.now(),
+                duration: startTraceEvent
+                  ? Date.now() - startTraceEvent.timestamp
+                  : undefined,
+              });
 
               if (
                 Boolean(chunk.output?.tool_execute) &&

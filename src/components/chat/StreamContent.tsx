@@ -38,7 +38,10 @@ export const StreamContent = memo(function StreamContent({
 }: StreamContentProps) {
   if (items.length === 0) return null;
 
-  // Pre-compute map: toolName -> latest tool_result timestamp (O(n) once)
+  const getTraceKey = (trace: TraceEvent) =>
+    trace.traceId || trace.toolCallId || `${trace.toolName}-${trace.timestamp}`;
+
+  // Pre-compute map: traceKey -> tool_result timestamp (O(n) once)
   const completedTools = useMemo(() => {
     const map = new Map<string, number>();
     for (const item of items) {
@@ -47,9 +50,10 @@ export const StreamContent = memo(function StreamContent({
         (item.data as TraceEvent).type === "tool_result"
       ) {
         const trace = item.data as TraceEvent;
-        const existing = map.get(trace.toolName!) || 0;
+        const key = getTraceKey(trace);
+        const existing = map.get(key) || 0;
         if (trace.timestamp > existing) {
-          map.set(trace.toolName!, trace.timestamp);
+          map.set(key, trace.timestamp);
         }
       }
     }
@@ -95,15 +99,16 @@ export const StreamContent = memo(function StreamContent({
           );
         }
         const traceData = segment.content as TraceEvent;
+        const traceKey = getTraceKey(traceData);
         // Skip tool_start if its tool_result has already arrived (O(1) lookup)
         if (
           traceData.type === "tool_start" &&
-          (completedTools.get(traceData.toolName!) || 0) > traceData.timestamp
+          (completedTools.get(traceKey) || 0) > traceData.timestamp
         ) {
           return null;
         }
         const isCompleted =
-          (completedTools.get(traceData.toolName!) || 0) > traceData.timestamp;
+          (completedTools.get(traceKey) || 0) > traceData.timestamp;
         const showLoading =
           isStreaming &&
           traceData.type === "tool_start" &&

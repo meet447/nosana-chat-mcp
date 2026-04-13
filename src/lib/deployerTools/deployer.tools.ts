@@ -46,6 +46,7 @@ export const stopJob = tool({
 
     try {
       return {
+        tool_execute: true,
         args: { jobId },
         prompt: {
           Action: "stop_Job",

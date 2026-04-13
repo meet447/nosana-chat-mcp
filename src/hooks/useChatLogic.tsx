@@ -574,7 +574,7 @@ export function useChatLogic() {
                           result:
                             "no result as approval cancelled by user itself | ask user what happend? do you want any refinement? show tools remember prev chat and conclude?",
                         }),
-                        "openai/qwen3:0.6b",
+                        modelToSend,
                         true,
                       );
                       console.log(`✖ Cancelled: ${funcName}`);
@@ -591,7 +591,10 @@ export function useChatLogic() {
                           onConfirm: async () => {
                             try {
                               console.log(`▶ Executing ${funcName}`);
-                              const approvedJobDef = pendingTool?.prompt || prompt;
+                              const latestPendingTool =
+                                useChatStore.getState().pendingTool;
+                              const approvedJobDef =
+                                latestPendingTool?.prompt || prompt;
                               const { validateJobDefinition } =
                                 await import("@nosana/sdk");
                               const r = validateJobDefinition(approvedJobDef);
@@ -728,9 +731,13 @@ export function useChatLogic() {
                           onConfirm: async () => {
                             try {
                               console.log(`▶ Executing ${funcName}`);
+                              const latestPendingTool =
+                                useChatStore.getState().pendingTool;
+                              const latestArgs =
+                                parsed.args || latestPendingTool?.prompt;
                               const { stopJob } =
                                 await import("@/lib/nosana/stopJob");
-                              const result = await stopJob(parsed.args.jobId);
+                              const result = await stopJob(latestArgs.jobId);
                               await handleAskChunk(
                                 undefined,
                                 getFollowBackPrompt({
@@ -774,18 +781,19 @@ export function useChatLogic() {
                           onConfirm: async () => {
                             try {
                               console.log(`▶ Executing ${funcName}`);
+                              const latestArgs = parsed.args;
                               const { extendJob } =
                                 await import("@/lib/nosana/extendjob");
                               const result = await extendJob(
-                                parsed.args.jobId,
-                                parsed.args.extensionSeconds / 60,
+                                latestArgs.jobId,
+                                latestArgs.extensionSeconds / 60,
                               );
                               await handleAskChunk(
                                 undefined,
                                 getFollowBackPrompt({
                                   funcName: funcName,
                                   status: "approved",
-                                  result: `the job extended for ${parsed.args.extensionSeconds / 60} minutes  successfully with result: ${result}`,
+                                  result: `the job extended for ${latestArgs.extensionSeconds / 60} minutes  successfully with result: ${result}`,
                                 }),
                                 undefined,
                                 true,

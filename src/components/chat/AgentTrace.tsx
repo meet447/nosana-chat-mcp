@@ -69,6 +69,13 @@ export function AgentTrace({ trace, isStreaming = false }: AgentTraceProps) {
 
   if (toolEvents.length === 0 && thinkingEvents.length === 0) return null;
 
+  const getTraceKey = (event: TraceEvent, fallbackIndex?: number) =>
+    event.traceId ||
+    event.toolCallId ||
+    (typeof fallbackIndex === "number"
+      ? `${event.toolName}-${event.timestamp}-${fallbackIndex}`
+      : `${event.toolName}-${event.timestamp}`);
+
   return (
     <div className="my-4 group/trace">
       <button
@@ -121,7 +128,7 @@ export function AgentTrace({ trace, isStreaming = false }: AgentTraceProps) {
           {/* Tool call chain */}
           <div className="space-y-1">
             {toolEvents.map((event, index) => {
-              const toolId = `${event.toolName}-${index}`;
+              const toolId = getTraceKey(event, index);
               const isExpanded = expandedTools.has(toolId);
               const isStart = event.type === "tool_start";
               const isResult = event.type === "tool_result";
@@ -131,7 +138,7 @@ export function AgentTrace({ trace, isStreaming = false }: AgentTraceProps) {
               const correspondingResult = trace.find(
                 (e) =>
                   e.type === "tool_result" &&
-                  e.toolName === event.toolName &&
+                  getTraceKey(e) === getTraceKey(event) &&
                   e.timestamp > event.timestamp,
               );
               const duration = correspondingResult?.duration;

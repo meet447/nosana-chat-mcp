@@ -30,6 +30,8 @@ export interface PermissionRequest {
 export interface TraceEvent {
   type: "thinking" | "tool_start" | "tool_result" | "tool_error" | "text";
   toolName?: string;
+  traceId?: string;
+  toolCallId?: string;
   toolArgs?: Record<string, unknown>;
   toolResult?: unknown;
   error?: string;
