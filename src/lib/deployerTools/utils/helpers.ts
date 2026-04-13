@@ -11,6 +11,7 @@ import { getPlannerModel } from "./plannerContext";
 import { IMAGE_REGISTRY } from "./ImageRegistry";
 import { SolanaService } from "../../services/SolanaService";
 import { normalizeInferenceBaseURL, COMMON_HEADERS } from "@/lib/utils/llm";
+import { ensureDeployer } from "../Deployer";
 
 const provider = process.env.LLM_PROVIDER || "inferia";
 const baseURL = provider === "deepseek"
@@ -133,7 +134,7 @@ export async function checkCreateJob(params: {
   )
     return fail("Expose port must be a valid TCP port (1–65535).");
 
-  const deployer = new NosanaDeployer("mainnet");
+  const deployer = ensureDeployer();
   const exactJobPrice = await deployer.getExactValue(
     marketPubKey,
     timeoutSeconds,

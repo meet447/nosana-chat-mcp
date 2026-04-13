@@ -1,5 +1,8 @@
 import { z } from "zod";
 
+const authModeSchema = z.enum(["wallet", "api_key", "none"]);
+const deployerNetworkSchema = z.enum(["mainnet", "devnet"]);
+
 const chatItemSchema = z.object({
   role: z.enum(["user", "model"]),
   content: z.string().min(1),
@@ -70,6 +73,8 @@ export const chatRequestSchema = z.object({
   chatId: z.string().nullable().optional(),
   apiKeys: z.record(z.string(), z.string()).optional(),
   walletPublicKey: z.string().optional(),
+  authMode: authModeSchema.optional(),
+  deployerNetwork: deployerNetworkSchema.optional(),
   deployedModel: z
     .object({
       baseURL: z.string().url(),

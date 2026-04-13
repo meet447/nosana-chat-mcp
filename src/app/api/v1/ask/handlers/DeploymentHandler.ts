@@ -1,25 +1,28 @@
 import { createOpenAI } from "@ai-sdk/openai";
 import { stepCountIs, streamText, ToolSet } from "ai";
 import { Payload } from "@/lib/utils/validation";
-import { getModels, createJob } from "@/lib/deployerTools/tool.createJob";
-import * as fs from "fs";
-import * as path from "path";
-
 import {
+  createJob,
   estimateJobCost,
   extendJobRuntime,
-  getMarket,
+  getAllJobs,
   getJob,
+  getMarket,
+  getModels,
   getWalletBalance,
   listGpuMarkets,
-  getAllJobs,
   stopJob,
   suggest_model_market,
-} from "@/lib/deployerTools/deployer.tools";
+} from "@/lib/deployerTools/registry";
+import * as fs from "fs";
+import * as path from "path";
 import { buildApiKeyToolSet } from "@/lib/deployerTools/apikey.tools";
 import { streamThrottle } from "./utils";
-import { runWithPlannerModel } from "@/lib/deployerTools/utils/plannerContext";
+import {
+  runWithDeployerContext,
+} from "@/lib/deployerTools/utils/plannerContext";
 import { normalizeInferenceBaseURL, COMMON_HEADERS } from "@/lib/utils/llm";
+import type { Network } from "@/lib/deployerTools/utils/types";
 
 const provider = process.env.LLM_PROVIDER || "inferia";
 let fallbackBaseUrl = process.env.NEXT_PUBLIC_INFERIA_LLM_URL || "";
@@ -164,76 +167,107 @@ export const handleDeployment = async (
     send("trace", JSON.stringify(event));
   };
 
-  return runWithPlannerModel(plannerModel, async () => {
-    const userWallet = payload.walletPublicKey;
-    const isApiKeyMode = userWallet?.startsWith("nos_");
+  const deployerNetwork: Network =
+    payload.deployerNetwork ||
+    (process.env.NEXT_PUBLIC_SOLANA_NETWORK === "mainnet"
+      ? "mainnet"
+      : "devnet");
 
-    // ── Pick the right tool set based on auth mode ──
-    const tools = isApiKeyMode ? getApiKeyTools(userWallet!) : getWalletTools();
+  return runWithDeployerContext(
+    {
+      model: plannerModel,
+      authMode: payload.authMode,
+      network: deployerNetwork,
+    },
+    async () => {
+      const userWallet = payload.walletPublicKey;
+      const isApiKeyMode =
+        payload.authMode === "api_key" || userWallet?.startsWith("nos_");
 
-    const knownToolNames = new Set(Object.keys(tools));
-    const actionableToolNames = new Set([
-      "createJob",
-      "extendJobRuntime",
-      "stopJob",
-    ]);
-    const seenSanitizedToolStarts = new Set<string>();
-
-    const normalizeChats = (chats: any[] = []): any[] => {
-      const validChats = chats
-        .filter((m) => m && m.content)
-        .map((m) => {
-          let mappedRole = m.role === "model" ? "assistant" : m.role;
-          if (!["user", "assistant", "system"].includes(mappedRole)) {
-            mappedRole = "user";
-          }
-          return {
-            role: mappedRole,
-            content: String(m.content),
-          };
-        });
-
-      const MAX_CHARS = 32000; // ~8k tokens safe context window
-      let charCount = 0;
-      const history = [];
-
-      for (let i = validChats.length - 1; i >= 0; i--) {
-        const msg = validChats[i];
-        if (charCount + msg.content.length <= MAX_CHARS) {
-          history.unshift(msg);
-          charCount += msg.content.length;
-        } else {
-          // Keep partial message if it's the only one that fits
-          if (history.length === 0) {
-            history.unshift({ ...msg, content: msg.content.slice(-MAX_CHARS) });
-          }
-          break;
-        }
+      if (isApiKeyMode && !userWallet) {
+        send(
+          "error",
+          "No Nosana API key credential was provided for deployer API key mode.",
+        );
+        return;
       }
-      return history;
-    };
 
-    // ── Auth context (dynamic, wallet-specific) ──
-    const authContext = isApiKeyMode
-      ? `**Auth Mode:** API Key (Credits-based). No wallet. Call all tools directly — pre-authenticated.`
-      : userWallet
-        ? `**Auth Mode:** Wallet (On-chain). Wallet: ${userWallet}
+      const apiKeyCredential = userWallet as string | undefined;
+
+      // ── Pick the right tool set based on auth mode ──
+      const tools = isApiKeyMode
+        ? getApiKeyTools(apiKeyCredential!)
+        : getWalletTools();
+
+      const knownToolNames = new Set(Object.keys(tools));
+      const actionableToolNames = new Set([
+        "createJob",
+        "extendJobRuntime",
+        "stopJob",
+      ]);
+      const seenSanitizedToolStarts = new Set<string>();
+
+      const normalizeChats = (chats: any[] = []): any[] => {
+        const validChats = chats
+          .filter((m) => m && m.content)
+          .map((m) => {
+            let mappedRole = m.role === "model" ? "assistant" : m.role;
+            if (!["user", "assistant", "system"].includes(mappedRole)) {
+              mappedRole = "user";
+            }
+            return {
+              role: mappedRole,
+              content: String(m.content),
+            };
+          });
+
+        const MAX_CHARS = 32000; // ~8k tokens safe context window
+        let charCount = 0;
+        const history = [];
+
+        for (let i = validChats.length - 1; i >= 0; i--) {
+          const msg = validChats[i];
+          if (charCount + msg.content.length <= MAX_CHARS) {
+            history.unshift(msg);
+            charCount += msg.content.length;
+          } else {
+            // Keep partial message if it's the only one that fits
+            if (history.length === 0) {
+              history.unshift({
+                ...msg,
+                content: msg.content.slice(-MAX_CHARS),
+              });
+            }
+            break;
+          }
+        }
+        return history;
+      };
+
+      // ── Auth context (dynamic, wallet-specific) ──
+      const authContext = isApiKeyMode
+        ? `**Auth Mode:** API Key (Credits-based). No wallet. Call all tools directly — pre-authenticated.`
+        : userWallet
+          ? `**Auth Mode:** Wallet (On-chain). Wallet: ${userWallet}
 Use "${userWallet}" as userPublicKey / UsersPublicKey / job_owners_pubKey / userPubKey in all tool calls.`
-        : `**No wallet connected.** Ask the user to connect their wallet or provide a Nosana API key first.`;
+          : `**No wallet connected.** Ask the user to connect their wallet or provide a Nosana API key first.`;
 
-    const messages = [
-      {
-        role: "system",
-        content: `You are **NosanaDeploy**, a deployment agent for Nosana's decentralized GPU network.
+      const networkContext = `**Target Network:** ${deployerNetwork}`;
+
+      const messages = [
+        {
+          role: "system",
+          content: `You are **NosanaDeploy**, a deployment agent for Nosana's decentralized GPU network.
 
 ${authContext}
+${networkContext}
 
 ${loadNosanaSkill()}
 ${payload.customPrompt || ""}`.trim(),
-      },
-      ...normalizeChats(payload.chats || []),
-      { role: "user", content: payload.query || "" },
-    ];
+        },
+        ...normalizeChats(payload.chats || []),
+        { role: "user", content: payload.query || "" },
+      ];
 
     const llmStart = performance.now();
 
@@ -379,6 +413,7 @@ ${payload.customPrompt || ""}`.trim(),
                   toolname: tool.name,
                   args: chunk.output.args,
                   prompt: chunk.output.prompt || chunk.output.meta?.prompt,
+                  approval: chunk.output.approval,
                 };
                 console.log(`🚀 toolExecute event sent for ${tool.name}`);
               }
@@ -423,7 +458,8 @@ ${payload.customPrompt || ""}`.trim(),
         `🚀 toolExecute sent post-stream for ${pendingTool.toolname}`,
       );
     }
-  });
+    },
+  );
 };
 
 function llmErr(e: unknown): string {

@@ -10,6 +10,7 @@ import { JOB_MESSAGE } from "./utils/contants";
 import { extractDefination } from "./utils/draft.prompt";
 import { getPlannerModel } from "./utils/plannerContext";
 import { schemaShape, ContainerExecutionTemplate } from "./utils/schema";
+import { buildCreateJobApproval } from "./contracts";
 
 export const createJob = tool({
   description: `Create a Nosana job and show a deploy button.
@@ -165,14 +166,19 @@ export const createJob = tool({
             );
           }
 
+          const approval = buildCreateJobApproval({
+            jobDefinition: params.directJobDef,
+            marketPubKey: market_public_key,
+            timeoutSeconds: params.timeoutSeconds,
+            userPublicKey: effectiveUserPubKey,
+            market: params.market,
+          });
+
           return {
             tool_execute: true,
-            args: {
-              ...params,
-              userPublicKey: effectiveUserPubKey,
-              marketPubKey: market_public_key,
-            },
+            args: approval.execution,
             prompt: params.directJobDef,
+            approval,
             content: [
               {
                 type: "text",
@@ -286,13 +292,19 @@ export const createJob = tool({
           );
         }
 
+        const approval = buildCreateJobApproval({
+          jobDefinition: jobdef,
+          marketPubKey: market_public_key,
+          timeoutSeconds: params.timeoutSeconds,
+          userPublicKey: effectiveUserPubKey,
+          market: params.market,
+        });
+
         return {
           tool_execute: true,
-          args: {
-            ...params,
-            marketPubKey: market_public_key,
-          },
+          args: approval.execution,
           prompt: jobdef,
+          approval,
           content: [
             {
               type: "text",

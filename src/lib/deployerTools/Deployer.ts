@@ -12,6 +12,7 @@ import {
 } from "./utils/types";
 import { MARKETS, MARKET_ADDRESS_TO_SLUG } from "./utils/supportingModel";
 import { DEFAULT_DEPLOYER } from "../constants";
+import { getDeployerNetwork } from "./utils/plannerContext";
 
 export class NosanaDeployer {
   private nosana: Client;
@@ -390,12 +391,16 @@ export class NosanaDeployer {
   }
 }
 
-let deployerInstance: NosanaDeployer | null = null;
+const deployerInstances = new Map<Network, NosanaDeployer>();
 
-export function ensureDeployer(): NosanaDeployer {
-  if (!deployerInstance) {
-    console.warn("Initializing NosanaDeployer...");
-    deployerInstance = new NosanaDeployer("mainnet");
+export function ensureDeployer(network = getDeployerNetwork()): NosanaDeployer {
+  const existing = deployerInstances.get(network);
+  if (existing) {
+    return existing;
   }
-  return deployerInstance;
+
+  console.warn(`Initializing NosanaDeployer for ${network}...`);
+  const deployer = new NosanaDeployer(network);
+  deployerInstances.set(network, deployer);
+  return deployer;
 }

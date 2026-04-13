@@ -8,6 +8,7 @@ import { DEFAULT, CONFIG } from "@/lib/constants";
 import { useWalletStore } from "@/store/wallet.store";
 import { SSEParser } from "@/lib/utils/SSEParser";
 import { getFollowBackPrompt } from "@/lib/utils/prompts";
+import type { CreateJobApproval } from "@/lib/deployerTools/contracts";
 
 const CUSTOM_SERVICE_PARAM_KEYS = [
   "custom-service_url",
@@ -28,6 +29,25 @@ function readFirstParam(
     const value = params.get(key)?.trim();
     if (value) return value;
   }
+  return null;
+}
+
+function buildCreateJobTestSnippet(approval: CreateJobApproval): string | null {
+  const { runtime, modelId, testGeneration } = approval.execution;
+  if (!testGeneration) return null;
+
+  if (runtime === "vllm") {
+    return `curl -s -X POST <service_url>/v1/chat/completions \\
+  -H "Content-Type: application/json" \\
+  -d '{"model":"${modelId || "your-model"}","messages":[{"role":"user","content":"Hello!"}],"stream":false}'`;
+  }
+
+  if (runtime === "ollama") {
+    return `curl -s -X POST <service_url>/api/generate \\
+  -H "Content-Type: application/json" \\
+  -d '{"model":"${modelId || "your-model"}","prompt":"Hello!"}'`;
+  }
+
   return null;
 }
 
@@ -297,6 +317,11 @@ export function useChatLogic() {
             mode: tool ? tool : undefined,
             customConfig: customConfig,
             walletPublicKey: walletCondition ? getCredential() : undefined,
+            authMode: tool === "deployer" ? authMode : undefined,
+            deployerNetwork:
+              tool === "deployer"
+                ? process.env.NEXT_PUBLIC_SOLANA_NETWORK || "devnet"
+                : undefined,
             chats: useChatStore.getState().currentChat.slice(-50).map((c) => ({
               role: c.role,
               content: c.content,
@@ -533,7 +558,11 @@ export function useChatLogic() {
                   try {
                     const parsed = JSON.parse(data);
                     const funcName = parsed.toolname || "UnknownTool";
-                    const prompt = parsed.prompt;
+                    const approval =
+                      funcName === "createJob" && parsed.approval
+                        ? (parsed.approval as CreateJobApproval)
+                        : null;
+                    const prompt = approval?.jobDefinition || parsed.prompt;
 
                     console.log(parsed);
                     const commonCancel = async () => {
@@ -562,8 +591,7 @@ export function useChatLogic() {
                           onConfirm: async () => {
                             try {
                               console.log(`▶ Executing ${funcName}`);
-                              const approvedJobDef =
-                                pendingTool?.prompt || parsed.prompt;
+                              const approvedJobDef = pendingTool?.prompt || prompt;
                               const { validateJobDefinition } =
                                 await import("@nosana/sdk");
                               const r = validateJobDefinition(approvedJobDef);
@@ -577,27 +605,20 @@ export function useChatLogic() {
                               }
                               const { createJob } =
                                 await import("@/lib/nosana/createJob");
+                              const execution = approval?.execution || parsed.args;
                               const result = await createJob(
                                 approvedJobDef,
-                                parsed.args.marketPubKey,
-                                parsed.args.timeoutSeconds / 60,
+                                execution.marketPubKey,
+                                execution.timeoutSeconds / 60,
                               );
                               if (!result.jobId)
                                 alert(
                                   `consider checking job manually on nosana dashboard something went wrong no jobId returned ${CONFIG.EXPLORER_URL}`,
                                 );
 
-                              const curlSnippet =
-                                parsed?.args?.provider === "huggingface" &&
-                                parsed?.args?.testGeneration
-                                  ? `
-                                # You can test your deployment using:
-                                curl -s -X POST <service_url>/generate \\
-                                  -H "Content-Type: application/json" \\
-                                  -H "Authorization: Bearer <api_key>" \\
-                                  -d '{"inputs": "hi"}'
-                                `
-                                  : "";
+                              const curlSnippet = approval
+                                ? buildCreateJobTestSnippet(approval)
+                                : null;
 
                               const jobDetails = (result?.result?.jobDetails ||
                                 {}) as Record<string, any>;
@@ -664,7 +685,7 @@ export function useChatLogic() {
                                         ? `${CONFIG.EXPLORER_URL}/jobs/${jobId}`
                                         : CONFIG.EXPLORER_URL),
                                     testGenerationCurl:
-                                      curlSnippet.trim() || null,
+                                      curlSnippet || null,
                                   },
                                   jobDef: approvedJobDef,
                                 }),
@@ -947,6 +968,7 @@ export function useChatLogic() {
       tool,
       isConnected,
       wallet,
+      authMode,
       isApiKeyConnected,
       nosanaApiKey,
       customConfig,
