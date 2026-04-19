@@ -93,8 +93,7 @@ export const AskForm: React.FC<AskFormProps> = ({
               setInput("");
             }
           }}
-          mcp={mcp}
-          className="size-8 shrink-0 border border-muted-foreground/10 p-0 sm:h-8 sm:w-auto sm:px-3"
+          className="size-8 shrink-0 p-0 sm:h-8 sm:w-auto sm:px-3"
         />
       </div>
     </form>

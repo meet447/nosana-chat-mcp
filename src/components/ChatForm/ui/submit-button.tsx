@@ -1,6 +1,6 @@
 "use client";
 import React from "react";
-import { Square, Send } from "lucide-react";
+import { Square, ArrowUp } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface SubmitButtonProps {
@@ -9,7 +9,6 @@ interface SubmitButtonProps {
   onAbort?: () => void;
   onSubmit?: () => void;
   className?: string;
-  mcp?: boolean
 }
 
 export const SubmitButton: React.FC<SubmitButtonProps> = ({
@@ -18,7 +17,6 @@ export const SubmitButton: React.FC<SubmitButtonProps> = ({
   onAbort,
   onSubmit,
   className,
-  mcp
 }) => {
   const handleClick = (e: React.MouseEvent) => {
     if (isLoading && onAbort) {
@@ -30,22 +28,32 @@ export const SubmitButton: React.FC<SubmitButtonProps> = ({
     }
   };
 
+  const canSubmit = !isDisabled && !isLoading;
+
   return (
     <button
       type={isLoading ? "button" : "submit"}
       onClick={handleClick}
       disabled={!isLoading && isDisabled}
+      aria-label={isLoading ? "Stop generating" : "Send message"}
       className={cn(
-        "flex cursor-pointer items-center justify-center rounded bg-muted-foreground/10 p-2 text-muted-foreground/80 transition",
-        !isDisabled && !isLoading ? "opacity-100 hover:bg-muted-foreground/20" : "opacity-50",
+        "flex cursor-pointer items-center justify-center rounded p-2 transition-colors",
+        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/40",
+        isLoading &&
+          "bg-muted-foreground/10 text-foreground hover:bg-muted-foreground/15",
+        !isLoading &&
+          canSubmit &&
+          "bg-brand text-brand-foreground hover:bg-brand/90",
+        !isLoading &&
+          !canSubmit &&
+          "cursor-not-allowed bg-muted-foreground/10 text-muted-foreground/50",
         className,
-        mcp && "bg-brand text-brand-foreground hover:bg-brand/90"
       )}
     >
       {isLoading ? (
-        <Square className="text-red-500/80" />
+        <Square className="size-4 fill-current" />
       ) : (
-        <Send className="cursor-pointer" />
+        <ArrowUp className="size-4" strokeWidth={2.5} />
       )}
     </button>
   );

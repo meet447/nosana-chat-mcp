@@ -22,7 +22,7 @@ const SidebarActions = ({
         type="button"
         aria-label="Expand sidebar"
         onClick={() => setBarOpen(true)}
-        className="flex w-full items-center justify-center rounded-md border border-border/60 bg-transparent py-2 text-muted-foreground/80 transition-colors hover:bg-muted-foreground/5 hover:text-foreground"
+        className="flex w-full items-center justify-center rounded-md border border-border/60 bg-transparent py-2 text-foreground/70 transition-colors hover:bg-muted-foreground/5 hover:text-foreground"
       >
         <ArrowRightFromLine className="size-4" />
       </button>
@@ -36,13 +36,13 @@ const SidebarActions = ({
       }}
       aria-label="Search chats"
       className={cn(
-        "flex w-full cursor-pointer items-center gap-2 rounded-md border border-border/60 bg-background/50 p-2 text-muted-foreground/80 transition-colors hover:bg-muted-foreground/5 hover:text-foreground",
+        "flex w-full cursor-pointer items-center gap-2 rounded-md border border-border/60 bg-background/50 p-2 text-foreground/80 transition-colors hover:bg-muted-foreground/5 hover:text-foreground",
         !barOpen && "justify-center",
       )}
     >
       <SlMagnifier className="size-4" />
       {barOpen && (
-        <span className="line-clamp-1 flex w-full items-center text-muted-foreground/80">
+        <span className="line-clamp-1 flex w-full items-center font-medium">
           Search chats
         </span>
       )}
@@ -52,11 +52,11 @@ const SidebarActions = ({
       onClick={handleNewChat}
       aria-label="New chat"
       className={cn(
-        "flex w-full cursor-pointer items-center gap-2 rounded-md border border-border/60 bg-transparent p-2 text-muted-foreground/80 transition-colors hover:bg-muted-foreground/5 hover:text-foreground",
+        "flex w-full cursor-pointer items-center gap-2 rounded-md border border-border/60 bg-transparent p-2 text-foreground/85 transition-colors hover:bg-muted-foreground/5 hover:text-foreground",
         barOpen ? "justify-center" : "justify-center px-2",
       )}
     >
-      {barOpen && <span>New chat</span>}
+      {barOpen && <span className="font-medium">New chat</span>}
       <Sparkles size={16} />
     </Button>
   </div>

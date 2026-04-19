@@ -11,11 +11,7 @@ import {
   ChevronDown,
   ChevronRight,
   CheckCircle2,
-  Circle,
-  Loader2,
   AlertCircle,
-  Wrench,
-  Clock,
 } from "lucide-react";
 
 interface StreamItem {
@@ -130,6 +126,65 @@ interface TraceItemProps {
   isStreaming?: boolean;
 }
 
+function formatDuration(ms?: number) {
+  if (!ms) return null;
+  return ms < 1000 ? `${ms}ms` : `${(ms / 1000).toFixed(2)}s`;
+}
+
+function TraceRow({
+  icon,
+  nameNode,
+  metaNode,
+  expandable,
+  expanded,
+  onToggle,
+  rowClass,
+}: {
+  icon: React.ReactNode;
+  nameNode: React.ReactNode;
+  metaNode?: React.ReactNode;
+  expandable?: boolean;
+  expanded?: boolean;
+  onToggle?: () => void;
+  rowClass?: string;
+}) {
+  const commonClass = cn(
+    "group/trace flex w-full items-center gap-2.5 rounded px-2 py-1 text-left transition-colors",
+    expandable && "cursor-pointer hover:bg-muted-foreground/5",
+    rowClass,
+  );
+
+  const content = (
+    <>
+      <span className="flex size-4 shrink-0 items-center justify-center">
+        {icon}
+      </span>
+      <span className="flex min-w-0 flex-1 items-center gap-2 text-[13px]">
+        {nameNode}
+      </span>
+      {metaNode}
+      {expandable && (
+        <span className="shrink-0 text-muted-foreground/40">
+          {expanded ? (
+            <ChevronDown size={13} />
+          ) : (
+            <ChevronRight size={13} />
+          )}
+        </span>
+      )}
+    </>
+  );
+
+  if (expandable) {
+    return (
+      <button type="button" onClick={onToggle} className={commonClass}>
+        {content}
+      </button>
+    );
+  }
+  return <div className={commonClass}>{content}</div>;
+}
+
 const TraceItem = memo(function TraceItem({
   trace,
   isStreaming = false,
@@ -138,72 +193,61 @@ const TraceItem = memo(function TraceItem({
 
   if (trace.type === "tool_start") {
     return (
-      <div className="flex items-center gap-3 py-2 px-3 my-2 rounded-lg bg-amber-500/5 border border-amber-500/20">
-        <Circle
-          size={14}
-          className={cn(
-            "shrink-0",
-            isStreaming && "animate-pulse",
-            "text-amber-500 fill-amber-500/20",
-          )}
-        />
-        <div className="flex items-center gap-2 flex-1">
-          <Wrench size={12} className="text-muted-foreground/50" />
-          <span className="text-sm font-medium">Calling {trace.toolName}</span>
-          {trace.toolArgs && Object.keys(trace.toolArgs).length > 0 && (
-            <span className="text-xs text-muted-foreground/50">
-              ({Object.keys(trace.toolArgs).slice(0, 2).join(", ")}
-              {Object.keys(trace.toolArgs).length > 2 && "..."})
+      <TraceRow
+        icon={
+          <span
+            className={cn(
+              "size-1.5 rounded-full bg-brand/80",
+              isStreaming && "animate-pulse",
+            )}
+          />
+        }
+        nameNode={
+          <>
+            <span className="truncate font-medium text-foreground/80">
+              {trace.toolName}
             </span>
-          )}
-        </div>
-        {isStreaming && (
-          <Loader2 size={12} className="animate-spin text-amber-500" />
-        )}
-      </div>
+            {trace.toolArgs && Object.keys(trace.toolArgs).length > 0 && (
+              <span className="truncate text-xs text-muted-foreground/50">
+                ({Object.keys(trace.toolArgs).slice(0, 2).join(", ")}
+                {Object.keys(trace.toolArgs).length > 2 && "…"})
+              </span>
+            )}
+          </>
+        }
+        metaNode={
+          <span className="text-xs text-muted-foreground/40">running…</span>
+        }
+      />
     );
   }
 
   if (trace.type === "tool_result") {
+    const duration = formatDuration(trace.duration);
     return (
-      <div className="flex flex-col my-2">
-        <div
-          className="flex items-center gap-3 py-2 px-3 rounded-lg bg-brand/5 border border-brand/20 cursor-pointer hover:bg-brand/10 transition-colors"
-          onClick={() => setExpanded(!expanded)}
-        >
-          <CheckCircle2
-            size={14}
-            className="shrink-0 text-brand fill-brand/20"
-          />
-          <div className="flex items-center gap-2 flex-1">
-            <Wrench size={12} className="text-muted-foreground/50" />
-            <span className="text-sm font-medium">
-              {trace.toolName} completed
+      <div className="flex flex-col">
+        <TraceRow
+          icon={<CheckCircle2 size={13} className="text-brand/80" />}
+          nameNode={
+            <span className="truncate font-medium text-foreground/80">
+              {trace.toolName}
             </span>
-            {trace.duration && (
-              <span className="flex items-center gap-1 text-xs text-muted-foreground/50">
-                <Clock size={10} />
-                {trace.duration < 1000
-                  ? `${trace.duration}ms`
-                  : `${(trace.duration / 1000).toFixed(2)}s`}
+          }
+          metaNode={
+            duration ? (
+              <span className="shrink-0 text-xs text-muted-foreground/40">
+                {duration}
               </span>
-            )}
-          </div>
-          <button className="p-1 hover:bg-muted rounded">
-            {expanded ? (
-              <ChevronDown size={14} className="text-muted-foreground/50" />
-            ) : (
-              <ChevronRight size={14} className="text-muted-foreground/50" />
-            )}
-          </button>
-        </div>
+            ) : null
+          }
+          expandable={Boolean(trace.toolResult)}
+          expanded={expanded}
+          onToggle={() => setExpanded((v) => !v)}
+        />
 
         {expanded && trace.toolResult ? (
-          <div className="mt-1 ml-6 p-3 rounded-lg bg-muted/50 border border-border/50">
-            <div className="text-xs font-semibold text-muted-foreground/70 uppercase tracking-wide mb-2">
-              Result
-            </div>
-            <pre className="text-xs font-mono bg-background/50 p-2 rounded border overflow-x-auto max-h-48 overflow-y-auto">
+          <div className="ml-6 mt-1 rounded-md border border-border/40 bg-muted/40 p-2">
+            <pre className="max-h-48 overflow-auto rounded bg-background/50 p-2 text-[11px] font-mono text-foreground/80">
               {String(JSON.stringify(trace.toolResult, null, 2))}
             </pre>
           </div>
@@ -214,21 +258,23 @@ const TraceItem = memo(function TraceItem({
 
   if (trace.type === "tool_error") {
     return (
-      <div className="flex items-center gap-3 py-2 px-3 my-2 rounded-lg bg-red-500/5 border border-red-500/20">
-        <AlertCircle
-          size={14}
-          className="shrink-0 text-red-500 fill-red-500/20"
-        />
-        <div className="flex items-center gap-2 flex-1">
-          <Wrench size={12} className="text-muted-foreground/50" />
-          <span className="text-sm font-medium text-red-500">
-            {trace.toolName} failed
+      <TraceRow
+        icon={<AlertCircle size={13} className="text-red-500/80" />}
+        nameNode={
+          <span className="truncate font-medium text-red-500/90">
+            {trace.toolName}
           </span>
-        </div>
-        {trace.error && (
-          <span className="text-xs text-red-500/70">{trace.error}</span>
-        )}
-      </div>
+        }
+        metaNode={
+          trace.error ? (
+            <span className="shrink-0 truncate text-xs text-red-500/60">
+              {trace.error}
+            </span>
+          ) : (
+            <span className="shrink-0 text-xs text-red-500/60">failed</span>
+          )
+        }
+      />
     );
   }
 
