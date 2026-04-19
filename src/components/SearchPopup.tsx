@@ -119,7 +119,7 @@ function SearchPopup({ setPopupOpen, chatHistory }: SearchPopupProps) {
             label: "Custom Prompt Settings",
             action: () => {
                 openSettings();
-                setActiveTab("Custom Prompt");
+                setActiveTab("prompt");
                 setPopupOpen(false);
             },
             type: "command",
@@ -131,7 +131,7 @@ function SearchPopup({ setPopupOpen, chatHistory }: SearchPopupProps) {
             label: "AI Configuration",
             action: () => {
                 openSettings();
-                setActiveTab("Custom Configs");
+                setActiveTab("model");
                 setPopupOpen(false);
             },
             type: "command",

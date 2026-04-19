@@ -5,118 +5,23 @@ import {
   DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuLabel,
-  DropdownMenuPortal,
   DropdownMenuSeparator,
   DropdownMenuShortcut,
-  DropdownMenuSub,
-  DropdownMenuSubContent,
-  DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
   Download,
   ImportIcon,
-  Info,
   ListCollapseIcon,
   Settings2,
   Trash,
 } from "lucide-react";
 
-import { useEffect, useRef, useState } from "react";
+import { useRef } from "react";
 import SettingPopover from "./SettingPopover";
 import { useChatStore } from "@/store/chat.store";
 import { useSettingsStore } from "@/store/setting.store";
-import {
-  Dialog,
-  DialogClose,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "./ui/dialog";
-import { Input } from "./ui/input";
-import { cn, ping } from "@/lib/utils";
-import { useWalletStore } from "@/store/wallet.store";
-
-interface ApiConfig {
-  name: string;
-  storageKey: string;
-  placeholder?: string;
-  pingModel: string;
-  guide: string;
-}
-
-const apis: ApiConfig[] = [
-  {
-    name: "Tavily",
-    storageKey: "TavilyApiKey",
-    placeholder: "Paste your Tavily API key",
-    pingModel: "tavilydefault",
-    guide: "",
-  },
-];
-
-function ApiKeyDialog({ api }: { api: ApiConfig }) {
-  const [key, setKey] = useState(
-    () => localStorage.getItem(api.storageKey) || "",
-  );
-  return (
-    <Dialog>
-      <DialogTrigger asChild>
-        <div>{api.name}</div>
-      </DialogTrigger>
-      <DialogContent className="sm:max-w-xl">
-        <DialogHeader>
-          <DialogTitle>{api.name} API Key</DialogTitle>
-          <DialogDescription>Add {api.name} API key here</DialogDescription>
-        </DialogHeader>
-        <Input
-          type="password"
-          placeholder={api.placeholder}
-          value={key}
-          className="selection:bg-brand"
-          onChange={(e) => setKey(e.target.value)}
-        />
-        <DialogFooter className="sm:justify-start">
-          <DialogClose asChild>
-            <Button
-              className="bg-brand text-brand-foreground cursor-pointer hover:bg-brand/90 text-sm"
-              type="button"
-              onClick={async () => {
-                const isValid = await ping({
-                  provider: api.name,
-                  apiKey: key,
-                  modelName: api.pingModel,
-                });
-
-                if (isValid) {
-                  localStorage.setItem(api.storageKey, key);
-                  alert("API key saved!");
-                } else {
-                  alert("Invalid API key");
-                  setKey("");
-                }
-              }}
-            >
-              Save
-            </Button>
-          </DialogClose>
-          <a
-            href={api.guide}
-            target="_blank"
-            className="hover:underline text-xs ml-auto mt-auto text-muted-foreground/40 flex items-center gap-1"
-          >
-            <Info size={15} /> get{" "}
-            <span className="text-muted-foreground"> {api.name}</span> api
-            key{" "}
-          </a>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  );
-}
+import { cn } from "@/lib/utils";
 
 export function LoginDropDown({
   barOpen,
@@ -126,9 +31,7 @@ export function LoginDropDown({
   router: any;
 }) {
   const { settingsOpen, openSettings, closeSettings } = useSettingsStore();
-  const { exportAllThreads, importThreads, clearAll, tool } = useChatStore();
-  const { wallet, isConnected, isApiKeyConnected, getCredential } =
-    useWalletStore();
+  const { exportAllThreads, importThreads, clearAll } = useChatStore();
 
   function handleExport() {
     exportAllThreads().catch(console.error);
@@ -155,7 +58,7 @@ export function LoginDropDown({
     <>
       <DropdownMenu>
         <DropdownMenuTrigger
-          className="bg-muted  border-muted-foreground/20 rounded hover:bg-muted-foreground/5 cursor-pointer"
+          className="bg-muted rounded border border-border/60 hover:bg-muted-foreground/5 cursor-pointer"
           asChild
         >
           <Button
@@ -164,19 +67,19 @@ export function LoginDropDown({
           >
             {barOpen ? (
               <>
-                <p className="text-muted-foreground/80">Nosana Chat</p>
-                <ListCollapseIcon className="text-muted-foreground/80" />
+                <p className="font-medium text-foreground/85">Nosana Chat</p>
+                <ListCollapseIcon className="text-foreground/70" />
               </>
             ) : (
-              <Settings2 className="text-muted-foreground/80" />
+              <Settings2 className="text-foreground/70" />
             )}
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent
-          className="w-56 bg-muted border border-muted-foreground/10 text-muted-foreground/80"
+          className="w-56 bg-muted border border-border/60 text-foreground"
           align="center"
         >
-          <DropdownMenuLabel className="text-muted-foreground/40">
+          <DropdownMenuLabel className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
             My Account
           </DropdownMenuLabel>
           <DropdownMenuGroup>
@@ -190,30 +93,7 @@ export function LoginDropDown({
               </DropdownMenuShortcut>
             </DropdownMenuItem>
           </DropdownMenuGroup>
-          <DropdownMenuGroup></DropdownMenuGroup>
-
-          {process.env.NODE_ENV !== "production" && (
-            <DropdownMenuSub>
-              <DropdownMenuSubTrigger>API keys</DropdownMenuSubTrigger>
-              <DropdownMenuPortal>
-                <DropdownMenuSubContent>
-                  {apis.map((api) => (
-                    <DropdownMenuItem
-                      key={api.storageKey}
-                      onSelect={(e) => e.preventDefault()}
-                    >
-                      <ApiKeyDialog api={api} />
-                    </DropdownMenuItem>
-                  ))}
-                </DropdownMenuSubContent>
-              </DropdownMenuPortal>
-            </DropdownMenuSub>
-          )}
-
           <DropdownMenuSeparator />
-          {/* <DropdownMenuItem onClick={() => window.open("https://github.com/HoomanDigital/nosana-chat", "_blank")}>GitHub
-                        <DropdownMenuShortcut><Github /></DropdownMenuShortcut>
-                    </DropdownMenuItem> */}
           <DropdownMenuItem onClick={handleExport}>
             ExportAllThreads
             <DropdownMenuShortcut>

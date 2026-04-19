@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React from "react";
 import {
   Dialog,
   DialogContent,
@@ -9,59 +9,146 @@ import { Slider } from "@/components/ui/slider";
 import { Label } from "@/components/ui/label";
 import { Input } from "./ui/input";
 import { Switch } from "./ui/switch";
-import { ping } from "@/lib/utils";
-import { FileText, Key, Settings, Sliders } from "lucide-react";
+import { FileText, Settings, Sliders } from "lucide-react";
 import { useSettings } from "@/hooks/useSettings";
 import QUICK_TEMPLATES from "@/lib/utils/QuickPromptTemplates";
+import { cn } from "@/lib/utils";
 
-interface Tab {
-  name: string;
-  logo: React.ReactNode;
-}
+type TabId = "preferences" | "prompt" | "model";
 
-interface ApiKeyFieldProps {
+interface TabDef {
+  id: TabId;
   label: string;
-  storageKey: string;
-  placeholder: string;
-  pingModel: string;
+  icon: React.ReactNode;
 }
 
-
-const TABS: Tab[] = [
-  { name: "Custom Prompt", logo: <FileText size={20} /> },
-  { name: "Custom Configs", logo: <Settings size={20} /> },
-  { name: "Additional Setting", logo: <Sliders size={20} /> },
-  ...(process.env.NODE_ENV !== "production" ? [{ name: "API Keys", logo: <Key size={20} /> }] : []),
+const TABS: TabDef[] = [
+  { id: "preferences", label: "Preferences", icon: <Sliders size={16} /> },
+  { id: "prompt", label: "Prompt", icon: <FileText size={16} /> },
+  { id: "model", label: "Model", icon: <Settings size={16} /> },
 ];
 
-const CustomPromptTab = () => {
-  const { customPrompt, setCustomPrompt, handleSaveCustomPrompt } = useSettings();
+function SectionHeading({
+  title,
+  description,
+}: {
+  title: string;
+  description?: string;
+}) {
+  return (
+    <div className="mb-4">
+      <h3 className="text-sm font-semibold text-foreground">{title}</h3>
+      {description ? (
+        <p className="mt-0.5 text-xs text-muted-foreground">{description}</p>
+      ) : null}
+    </div>
+  );
+}
+
+function PreferencesTab() {
+  const { localConfig, setLocalConfig, DEFAULT_LOCAL_SETTINGS } = useSettings();
+
+  const options = [
+    {
+      id: "followUp" as const,
+      label: "Suggest follow-up questions",
+      description: "Show quick suggestions after each assistant reply.",
+      checked: localConfig.followUp ?? DEFAULT_LOCAL_SETTINGS.follow_up,
+    },
+    {
+      id: "showErrorMessages" as const,
+      label: "Show error messages",
+      description: "Display raw error details when a request fails.",
+      checked:
+        localConfig.showErrorMessages ??
+        DEFAULT_LOCAL_SETTINGS.show_error_messages,
+    },
+    {
+      id: "appearance" as const,
+      label: "Dark mode",
+      description: "Switch between light and dark themes.",
+      checked: localConfig.appearance === "dark",
+    },
+  ];
 
   return (
-    <div className="flex flex-col gap-4 mx-auto">
-      <label htmlFor="custom-prompt-textarea" className="font-medium text-sm">Custom Prompt:</label>
+    <div>
+      <SectionHeading
+        title="Preferences"
+        description="Tune the chat experience."
+      />
+      <div className="flex flex-col gap-2">
+        {options.map((opt) => (
+          <div
+            key={opt.id}
+            className="flex items-center justify-between gap-4 rounded-lg border border-border/60 bg-background/40 p-3"
+          >
+            <div className="min-w-0">
+              <Label
+                htmlFor={opt.id}
+                className="text-sm font-medium text-foreground"
+              >
+                {opt.label}
+              </Label>
+              <p className="mt-0.5 text-xs text-muted-foreground">
+                {opt.description}
+              </p>
+            </div>
+            <Switch
+              id={opt.id}
+              checked={opt.checked}
+              onCheckedChange={(checked) => {
+                if (opt.id === "appearance") {
+                  setLocalConfig({ appearance: checked ? "dark" : "light" });
+                } else {
+                  setLocalConfig({ [opt.id]: checked });
+                }
+              }}
+              className="cursor-pointer data-[state=checked]:bg-brand data-[state=unchecked]:bg-muted-foreground/30"
+            />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function PromptTab() {
+  const { customPrompt, setCustomPrompt, handleSaveCustomPrompt } =
+    useSettings();
+
+  return (
+    <div className="flex flex-col gap-4">
+      <SectionHeading
+        title="Custom prompt"
+        description="Prepended to every conversation as a system instruction."
+      />
+
       <textarea
         id="custom-prompt-textarea"
         value={customPrompt}
         onChange={(e) => setCustomPrompt(e.target.value)}
-        className="border border-muted-foreground/20 bg-background/30 h-52 rounded-lg p-3 w-full resize-none focus:outline-none focus:ring-2 focus:ring-brand/50 transition-colors"
-        placeholder="Enter your custom prompt here..."
+        className="h-48 w-full resize-none rounded-lg border border-border/60 bg-background/40 p-3 text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-brand/40"
+        placeholder="e.g. Answer concisely. Prefer bullet points when listing items..."
       />
+
       <button
         onClick={handleSaveCustomPrompt}
-        className="bg-brand text-brand-foreground py-2 rounded w-full hover:bg-brand/90 cursor-pointer transition-colors font-medium"
+        className="cursor-pointer rounded-md bg-brand py-2 text-sm font-medium text-brand-foreground transition-colors hover:bg-brand/90"
       >
-        Save Prompt
+        Save prompt
       </button>
 
-      <div className="mt-2">
-        <span className="font-medium text-sm">Quick Prompt Templates:</span>
-        <div className="flex flex-wrap gap-2 mt-3">
+      <div>
+        <p className="mb-2 text-xs font-medium text-muted-foreground">
+          Quick templates
+        </p>
+        <div className="flex flex-wrap gap-2">
           {QUICK_TEMPLATES.map((template) => (
             <button
               key={template.label}
               onClick={() => setCustomPrompt(template.prompt)}
-              className="bg-muted-foreground/5 hover:bg-muted-foreground/15 cursor-pointer px-3 py-2 rounded-lg text-sm transition-colors border border-transparent hover:border-muted-foreground/20"
+              className="cursor-pointer rounded-md border border-border/60 bg-background/40 px-3 py-1.5 text-xs text-muted-foreground transition-colors hover:border-border hover:bg-muted-foreground/5 hover:text-foreground"
             >
               {template.label}
             </button>
@@ -70,18 +157,18 @@ const CustomPromptTab = () => {
       </div>
     </div>
   );
-};
+}
 
 const EMPTY_V_LABELS: string[] = [];
 
-const SliderControl = ({
+function SliderControl({
   label,
   value,
   onValueChange,
   min,
   max,
   step = 0.01,
-  valueLabels = EMPTY_V_LABELS
+  valueLabels = EMPTY_V_LABELS,
 }: {
   label: string;
   value: number;
@@ -90,38 +177,39 @@ const SliderControl = ({
   max: number;
   step?: number;
   valueLabels?: string[];
-}) => (
-  <div className="flex flex-col gap-2">
-    <Label htmlFor={label.replace(/\s+/g, '-').toLowerCase()} className="text-sm font-medium">
-      {label}: {value}
-    </Label>
-    <div className="flex justify-between text-xs text-muted-foreground">
-      {valueLabels.length === 3 ? (
-        <>
-          <span>{valueLabels[0]}</span>
-          <span>{valueLabels[1]}</span>
-          <span>{valueLabels[2]}</span>
-        </>
-      ) : (
-        <>
-          <span>{min}</span>
-          <span>{(min + max) / 2}</span>
-          <span>{max}</span>
-        </>
-      )}
-    </div>
-    <Slider
-      value={[value]}
-      min={min}
-      max={max}
-      step={step}
-      onValueChange={(val) => onValueChange(val[0])}
-      className="my-2"
-    />
-  </div>
-);
+}) {
+  const id = label.replace(/\s+/g, "-").toLowerCase();
+  const midLabel =
+    valueLabels.length === 3 ? valueLabels[1] : (min + max) / 2;
+  const lowLabel = valueLabels.length === 3 ? valueLabels[0] : min;
+  const highLabel = valueLabels.length === 3 ? valueLabels[2] : max;
 
-const CustomConfigsTab = () => {
+  return (
+    <div className="flex flex-col gap-1.5">
+      <div className="flex items-center justify-between">
+        <Label htmlFor={id} className="text-sm font-medium">
+          {label}
+        </Label>
+        <span className="font-mono text-xs text-muted-foreground">{value}</span>
+      </div>
+      <Slider
+        id={id}
+        value={[value]}
+        min={min}
+        max={max}
+        step={step}
+        onValueChange={(val) => onValueChange(val[0])}
+      />
+      <div className="flex justify-between text-[10px] text-muted-foreground/60">
+        <span>{lowLabel}</span>
+        <span>{midLabel}</span>
+        <span>{highLabel}</span>
+      </div>
+    </div>
+  );
+}
+
+function ModelTab() {
   const {
     temperature,
     setTemperature,
@@ -141,72 +229,80 @@ const CustomConfigsTab = () => {
   } = useSettings();
 
   return (
-    <div className="flex flex-col gap-3 overflow-y-auto pr-2 custom-scrollbar">
-      <SliderControl
-        label="Temperature"
-        value={temperature}
-        onValueChange={setTemperature}
-        min={0}
-        max={1}
-        valueLabels={["0", "0.5", "1"]}
-      />
-
-      <SliderControl
-        label="Max Tokens"
-        value={maxTokens}
-        onValueChange={setMaxTokens}
-        min={1}
-        max={4000}
-        step={1}
-        valueLabels={["1", "2000", "4000"]}
-      />
-
-      <SliderControl
-        label="Top P"
-        value={topP}
-        onValueChange={setTopP}
-        min={0}
-        max={1}
-        valueLabels={["0", "0.5", "1"]}
-      />
-
-      <SliderControl
-        label="Presence Penalty"
-        value={presencePenalty}
-        onValueChange={setPresencePenalty}
-        min={-2}
-        max={2}
-        valueLabels={["-2", "0", "2"]}
-      />
-
-      <SliderControl
-        label="Frequency Penalty"
-        value={frequencyPenalty}
-        onValueChange={setFrequencyPenalty}
-        min={-2}
-        max={2}
-        valueLabels={["-2", "0", "2"]}
-      />
-
-      <div className="flex flex-col gap-2">
-        <Label htmlFor="stop-sequences" className="text-sm font-medium">
-          Stop Sequences (comma separated):
-        </Label>
-        <Input
-          id="stop-sequences"
-          value={stopSequences}
-          onChange={(e) => setStopSequences(e.target.value)}
-          placeholder="e.g., \n, END, STOP"
-          className="mt-1"
+    <div className="flex flex-col gap-6">
+      <div>
+        <SectionHeading
+          title="Sampling"
+          description="How the model picks the next token."
         />
+        <div className="flex flex-col gap-4">
+          <SliderControl
+            label="Temperature"
+            value={temperature}
+            onValueChange={setTemperature}
+            min={0}
+            max={1}
+            valueLabels={["0", "0.5", "1"]}
+          />
+          <SliderControl
+            label="Max tokens"
+            value={maxTokens}
+            onValueChange={setMaxTokens}
+            min={1}
+            max={4000}
+            step={1}
+            valueLabels={["1", "2000", "4000"]}
+          />
+          <SliderControl
+            label="Top P"
+            value={topP}
+            onValueChange={setTopP}
+            min={0}
+            max={1}
+            valueLabels={["0", "0.5", "1"]}
+          />
+          <SliderControl
+            label="Presence penalty"
+            value={presencePenalty}
+            onValueChange={setPresencePenalty}
+            min={-2}
+            max={2}
+            valueLabels={["-2", "0", "2"]}
+          />
+          <SliderControl
+            label="Frequency penalty"
+            value={frequencyPenalty}
+            onValueChange={setFrequencyPenalty}
+            min={-2}
+            max={2}
+            valueLabels={["-2", "0", "2"]}
+          />
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="stop-sequences" className="text-sm font-medium">
+              Stop sequences
+            </Label>
+            <Input
+              id="stop-sequences"
+              value={stopSequences}
+              onChange={(e) => setStopSequences(e.target.value)}
+              placeholder="e.g. \n, END, STOP"
+            />
+            <p className="text-xs text-muted-foreground/70">
+              Comma separated. Generation halts when any is produced.
+            </p>
+          </div>
+        </div>
       </div>
 
-      <div className="border-t border-muted-foreground/20 pt-6">
-        <h3 className="text-lg font-semibold mb-4">Context Settings</h3>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div className="space-y-2">
+      <div className="border-t border-border/60 pt-5">
+        <SectionHeading
+          title="Context window"
+          description="How past messages are packed into each request."
+        />
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <div className="space-y-1.5">
             <Label htmlFor="absolute-max-tokens" className="text-sm font-medium">
-              Absolute Max Tokens
+              Absolute max tokens
             </Label>
             <Input
               id="absolute-max-tokens"
@@ -215,16 +311,19 @@ const CustomConfigsTab = () => {
               max={10000}
               value={context?.absoluteMaxTokens ?? 4000}
               onChange={(e) => {
-                const val = Math.min(Math.max(Number(e.target.value), 1), 10000);
+                const val = Math.min(
+                  Math.max(Number(e.target.value), 1),
+                  10000,
+                );
                 setContext({ ...context, absoluteMaxTokens: val });
               }}
             />
-            <p className="text-xs text-muted-foreground">Maximum: 10,000</p>
+            <p className="text-xs text-muted-foreground/70">Up to 10,000.</p>
           </div>
 
-          <div className="space-y-2">
+          <div className="space-y-1.5">
             <Label htmlFor="prev-chat-limit" className="text-sm font-medium">
-              Minimum Previous Chat
+              Min previous messages
             </Label>
             <Input
               id="prev-chat-limit"
@@ -237,12 +336,12 @@ const CustomConfigsTab = () => {
                 setContext({ ...context, prevChatLimit: val });
               }}
             />
-            <p className="text-xs text-muted-foreground">Minimum messages to include (1-30)</p>
+            <p className="text-xs text-muted-foreground/70">Range 1–30.</p>
           </div>
 
-          <div className="space-y-2">
+          <div className="space-y-1.5">
             <Label htmlFor="max-context-tokens" className="text-sm font-medium">
-              Max Context Tokens
+              Max context tokens
             </Label>
             <Input
               id="max-context-tokens"
@@ -251,218 +350,130 @@ const CustomConfigsTab = () => {
               max={10000}
               value={context?.maxContextTokens ?? 3000}
               onChange={(e) => {
-                const val = Math.min(Math.max(Number(e.target.value), 1), 10000);
+                const val = Math.min(
+                  Math.max(Number(e.target.value), 1),
+                  10000,
+                );
                 setContext({ ...context, maxContextTokens: val });
               }}
             />
-            <p className="text-xs text-muted-foreground">Maximum: 10,000</p>
+            <p className="text-xs text-muted-foreground/70">Up to 10,000.</p>
           </div>
 
-          <div className="space-y-2">
+          <div className="space-y-1.5">
             <Label htmlFor="truncate-from" className="text-sm font-medium">
-              Truncate From
+              Truncate from
             </Label>
-            <div className="flex items-center justify-between bg-background/30 rounded-lg p-2  px-3 border border-muted-foreground/20">
-              <span className="text-sm">{context?.truncateFrom === 'end' ? "End" : "Start"}</span>
+            <div className="flex items-center justify-between rounded-md border border-border/60 bg-background/40 px-3 py-2">
+              <span className="text-sm">
+                {context?.truncateFrom === "end" ? "End" : "Start"}
+              </span>
               <Switch
                 id="truncate-from"
-                checked={context?.truncateFrom === 'end'}
+                checked={context?.truncateFrom === "end"}
                 onCheckedChange={() => {
                   setContext({
                     ...context,
-                    truncateFrom: context?.truncateFrom === 'end' ? 'start' : 'end'
+                    truncateFrom:
+                      context?.truncateFrom === "end" ? "start" : "end",
                   });
                 }}
-                className="cursor-pointer data-[state=unchecked]:bg-muted-foreground/30 data-[state=checked]:bg-brand"
-                />
-              </div>
-              <p className="text-xs text-muted-foreground">Where to truncate if context exceeds max</p>
+                className="cursor-pointer data-[state=checked]:bg-brand data-[state=unchecked]:bg-muted-foreground/30"
+              />
+            </div>
+            <p className="text-xs text-muted-foreground/70">
+              Where to trim when context exceeds the limit.
+            </p>
           </div>
         </div>
       </div>
 
       <button
         onClick={handleSaveAIConfig}
-        className="bg-brand text-brand-foreground px-4 py-2 rounded hover:bg-brand/90 cursor-pointer transition-colors font-medium mt-2"
+        className="cursor-pointer self-start rounded-md bg-brand px-4 py-2 text-sm font-medium text-brand-foreground transition-colors hover:bg-brand/90"
       >
-        Save Configuration
+        Save configuration
       </button>
     </div>
   );
-};
+}
 
-const AdditionalSettingsTab = () => {
-  const { localConfig, setLocalConfig, handleSaveLocalConfig, DEFAULT_LOCAL_SETTINGS } = useSettings();
-
-  const toggleSetting = (key: string, value: any) => {
-    const newConfig = { ...localConfig, [key]: value };
-    setLocalConfig(newConfig);
-    handleSaveLocalConfig(newConfig);
-  };
-
-  const settings = [
-    {
-      id: "followUp",
-      label: "Want follow up?",
-      checked: localConfig.followUp ?? DEFAULT_LOCAL_SETTINGS.follow_up,
-      disabled: false
-    },
-    {
-      id: "showErrorMessages",
-      label: "Show error messages?",
-      checked: localConfig.showErrorMessages ?? DEFAULT_LOCAL_SETTINGS.show_error_messages
-    },
-    {
-      id: "appearance",
-      label: `Dark Mode (${localConfig.appearance === "dark" ? "On" : "Off"})`,
-      checked: localConfig.appearance === "dark"
-    }
-  ];
-
+function TabButton({
+  tab,
+  isActive,
+  onClick,
+}: {
+  tab: TabDef;
+  isActive: boolean;
+  onClick: () => void;
+}) {
   return (
-    <div className="space-y-2 py-2">
-      {settings.map((setting) => (
-        <div key={setting.id} className="flex w-full items-center justify-between p-3 bg-background/30 rounded-lg border border-muted-foreground/20">
-          <Label htmlFor={setting.id} className="text-sm font-medium cursor-pointer flex-1">
-            {setting.label}
-          </Label>
-          <Switch
-            id={setting.id}
-            checked={setting.checked}
-            disabled={setting.disabled}
-            onCheckedChange={(checked) => {
-              if (setting.id === "appearance") {
-                const newAppearance = checked ? "dark" : "light";
-                toggleSetting("appearance", newAppearance);
-              } else {
-                toggleSetting(setting.id, checked);
-              }
-            }}
-            className="cursor-pointer data-[state=unchecked]:bg-muted-foreground/30 data-[state=checked]:bg-brand"
-          />
-        </div>
-      ))}
-    </div>
+    <button
+      role="tab"
+      aria-selected={isActive}
+      onClick={onClick}
+      className={cn(
+        "flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium transition-colors",
+        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/40",
+        "flex-1 justify-center sm:flex-initial sm:justify-start",
+        isActive
+          ? "bg-muted-foreground/10 text-foreground"
+          : "text-foreground/70 hover:bg-muted-foreground/5 hover:text-foreground",
+      )}
+    >
+      <span className="shrink-0">{tab.icon}</span>
+      <span className="hidden sm:inline">{tab.label}</span>
+    </button>
   );
+}
+
+const TAB_COMPONENTS: Record<TabId, React.ComponentType> = {
+  preferences: PreferencesTab,
+  prompt: PromptTab,
+  model: ModelTab,
 };
 
-const ApiKeysTab = () => (
-  <div className="space-y-4 py-2">
-    <ApiKeyField
-      label="Tavily"
-      storageKey="TavilyApiKey"
-      placeholder="Enter your Tavily API key"
-      pingModel="tavilydefault"
-    />
-  </div>
-);
-const ApiKeyField = ({ label, storageKey, placeholder, pingModel }: ApiKeyFieldProps) => {
-  const [value, setValue] = useState("");
+function isTabId(value: string): value is TabId {
+  return value === "preferences" || value === "prompt" || value === "model";
+}
 
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      setValue(localStorage.getItem(storageKey) || "");
-    }
-  }, [storageKey]);
-
-  const handleSave = async () => {
-    const isValid = await ping({
-      provider: label,
-      apiKey: value,
-      modelName: pingModel
-    });
-
-    if (isValid) {
-      localStorage.setItem(storageKey, value);
-      alert("API key saved successfully!");
-    } else {
-      alert("Invalid API key. Please check and try again.");
-    }
-  };
-
-  return (
-    <div className="flex flex-col gap-3 p-3 bg-background/30 rounded-lg border border-muted-foreground/20">
-      <Label htmlFor={storageKey} className="text-sm font-medium">
-        {label} API Key
-      </Label>
-      <div className="flex gap-2 items-center">
-        <Input
-          id={storageKey}
-          type="password"
-          placeholder={placeholder}
-          value={value}
-          onChange={(e) => setValue(e.target.value)}
-          className="flex-1"
-        />
-        <button
-          onClick={handleSave}
-          className="px-4 py-2 cursor-pointer bg-brand text-brand-foreground rounded-lg hover:bg-brand/90 transition-colors font-medium whitespace-nowrap"
-        >
-          Save
-        </button>
-      </div>
-    </div>
-  );
-};
-
-const TabButton = ({ tab, isActive, onClick }: { tab: Tab; isActive: boolean; onClick: () => void }) => (
-  <button
-    className={`flex-1 sm:flex-initial flex justify-center items-center font-medium cursor-pointer py-3 px-4 rounded-lg transition-colors ${isActive
-      ? "bg-muted-foreground/5 text-foreground"
-      : "text-muted-foreground hover:bg-muted-foreground/5"
-      }`}
-    onClick={onClick}
-  >
-    <span className="sm:hidden">{tab.logo}</span>
-    <span className="hidden sm:inline text-sm">{tab.name}</span>
-  </button>
-);
-
-function SettingPopover({ open, setOpen }: { open: boolean; setOpen: (open: boolean) => void }) {
+function SettingPopover({
+  open,
+  setOpen,
+}: {
+  open: boolean;
+  setOpen: (open: boolean) => void;
+}) {
   const { activeTab, setActiveTab } = useSettings();
-
-  const renderActiveTab = () => {
-    switch (activeTab) {
-      case "Custom Prompt":
-        return <CustomPromptTab />;
-      case "Custom Configs":
-        return <CustomConfigsTab />;
-      case "Additional Setting":
-        return <AdditionalSettingsTab />;
-      case "API Keys":
-        return <ApiKeysTab />;
-      default:
-        return <CustomPromptTab />;
-    }
-  };
+  const currentTab: TabId = isTabId(activeTab) ? activeTab : "preferences";
+  const ActiveTab = TAB_COMPONENTS[currentTab];
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogContent className="min-w-4/5 lg:min-w-3/5 h-[90vh] sm:h-[80vh] bg-muted/90 backdrop-blur-2xl p-0 flex flex-col sm:flex-row rounded-2xl overflow-hidden">
-        <div className="sm:w-64 bg-muted/80 flex flex-row sm:flex-col p-4 gap-2 border-b sm:border-b-0 sm:border-r border-muted-foreground/5">
+      <DialogContent className="flex h-[90vh] w-full max-w-3xl flex-col overflow-hidden rounded-2xl border border-border/60 bg-muted/90 p-0 backdrop-blur-2xl sm:h-[78vh] sm:flex-row">
+        <nav
+          role="tablist"
+          aria-orientation="vertical"
+          className="flex flex-row gap-1 border-b border-border/60 p-3 sm:w-52 sm:flex-col sm:border-b-0 sm:border-r"
+        >
           {TABS.map((tab) => (
             <TabButton
-              key={tab.name}
+              key={tab.id}
               tab={tab}
-              isActive={activeTab === tab.name}
-              onClick={() => setActiveTab(tab.name)}
+              isActive={currentTab === tab.id}
+              onClick={() => setActiveTab(tab.id)}
             />
           ))}
-        </div>
+        </nav>
 
-        <div className="flex-1 p-6 h-full overflow-auto">
-          <DialogHeader className="mb-6">
-            <DialogTitle className="text-2xl font-bold text-foreground">
+        <div className="custom-scrollbar flex-1 overflow-auto p-6">
+          <DialogHeader className="mb-5">
+            <DialogTitle className="text-lg font-semibold text-foreground">
               Settings
             </DialogTitle>
           </DialogHeader>
 
-          <div>
-            {activeTab === "Custom Prompt" && <CustomPromptTab />}
-            {activeTab === "Custom Configs" && <CustomConfigsTab />}
-            {activeTab === "Additional Setting" && <AdditionalSettingsTab />}
-            {activeTab === "API Keys" && <ApiKeysTab />}
-          </div>
+          <ActiveTab />
         </div>
       </DialogContent>
     </Dialog>
@@ -470,25 +481,3 @@ function SettingPopover({ open, setOpen }: { open: boolean; setOpen: (open: bool
 }
 
 export default SettingPopover;
-
-const scrollbarStyles = `
-  .custom-scrollbar::-webkit-scrollbar {
-    width: 6px;
-  }
-  .custom-scrollbar::-webkit-scrollbar-track {
-    background: transparent;
-  }
-  .custom-scrollbar::-webkit-scrollbar-thumb {
-    background-color: hsl(var(--muted-foreground) / 0.3);
-    border-radius: 8px;
-  }
-  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-    background-color: hsl(var(--muted-foreground) / 0.5);
-  }
-`;
-
-if (typeof document !== 'undefined') {
-  const style = document.createElement('style');
-  style.textContent = scrollbarStyles;
-  document.head.append(style);
-}

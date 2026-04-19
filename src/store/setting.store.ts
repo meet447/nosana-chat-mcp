@@ -39,7 +39,7 @@ const DEFAULT_LOCAL_CONFIG: LocalConfig = {
 export const useSettingsStore = create<SettingsState>((set, get) => ({
   settingsOpen: false,
   templateOpen: false,
-  activeTab: "Custom Prompt",
+  activeTab: "preferences",
   mobileOpen: false,
 
   toggleSettings: () => set((state) => ({ settingsOpen: !state.settingsOpen })),
