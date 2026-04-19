@@ -168,12 +168,12 @@ const TraceItem = memo(function TraceItem({
     return (
       <div className="flex flex-col my-2">
         <div
-          className="flex items-center gap-3 py-2 px-3 rounded-lg bg-green-500/5 border border-green-500/20 cursor-pointer hover:bg-green-500/10 transition-colors"
+          className="flex items-center gap-3 py-2 px-3 rounded-lg bg-brand/5 border border-brand/20 cursor-pointer hover:bg-brand/10 transition-colors"
           onClick={() => setExpanded(!expanded)}
         >
           <CheckCircle2
             size={14}
-            className="shrink-0 text-green-500 fill-green-500/20"
+            className="shrink-0 text-brand fill-brand/20"
           />
           <div className="flex items-center gap-2 flex-1">
             <Wrench size={12} className="text-muted-foreground/50" />

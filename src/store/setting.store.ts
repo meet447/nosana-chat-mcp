@@ -4,6 +4,7 @@ export interface LocalConfig {
   showErrorMessages: boolean;
   appearance: "light" | "dark";
   followUp: boolean;
+  sidebarCollapsed: boolean;
 }
 
 interface SettingsState {
@@ -24,9 +25,18 @@ interface SettingsState {
 
   localConfig: LocalConfig;
   setLocalConfig: (config: Partial<LocalConfig>) => void;
+  toggleSidebarCollapsed: () => void;
+  toggleAppearance: () => void;
 }
 
-export const useSettingsStore = create<SettingsState>((set) => ({
+const DEFAULT_LOCAL_CONFIG: LocalConfig = {
+  showErrorMessages: false,
+  appearance: "dark",
+  followUp: true,
+  sidebarCollapsed: false,
+};
+
+export const useSettingsStore = create<SettingsState>((set, get) => ({
   settingsOpen: false,
   templateOpen: false,
   activeTab: "Custom Prompt",
@@ -47,13 +57,12 @@ export const useSettingsStore = create<SettingsState>((set) => ({
   setActiveTab: (tab: string) => set({ activeTab: tab }),
 
   localConfig: (() => {
-    const defaults: LocalConfig = { showErrorMessages: false, appearance: "dark", followUp: true };
-    if (typeof window === "undefined") return defaults;
+    if (typeof window === "undefined") return DEFAULT_LOCAL_CONFIG;
     try {
       const stored = JSON.parse(localStorage.getItem("localConfig") || "{}");
-      return { ...defaults, ...stored };
+      return { ...DEFAULT_LOCAL_CONFIG, ...stored };
     } catch {
-      return defaults;
+      return DEFAULT_LOCAL_CONFIG;
     }
   })(),
 
@@ -64,5 +73,15 @@ export const useSettingsStore = create<SettingsState>((set) => ({
         localStorage.setItem("localConfig", JSON.stringify(updated));
       }
       return { localConfig: updated };
+    }),
+
+  toggleSidebarCollapsed: () =>
+    get().setLocalConfig({
+      sidebarCollapsed: !get().localConfig.sidebarCollapsed,
+    }),
+
+  toggleAppearance: () =>
+    get().setLocalConfig({
+      appearance: get().localConfig.appearance === "dark" ? "light" : "dark",
     }),
 }));

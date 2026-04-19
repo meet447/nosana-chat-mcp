@@ -125,7 +125,7 @@ export default function PhantomConnect({
                   : `Click to copy: ${wallet}`
             }
           >
-            <Wallet className="h-3.5 w-3.5 text-green-500" />
+            <Wallet className="h-3.5 w-3.5 text-brand" />
             <span
               className={cn(
                 "max-w-[7.5rem] truncate text-muted-foreground sm:max-w-none",
@@ -310,7 +310,7 @@ function ConnectDialog({
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0 space-y-2">
               <DialogTitle className="flex min-w-0 items-center gap-2 text-xl font-semibold sm:text-2xl">
-                <PlugZap className="h-5 w-5 text-green-400" />
+                <PlugZap className="h-5 w-5 text-brand" />
                 Connect to Nosana
               </DialogTitle>
               <DialogDescription className="max-w-[34rem] text-sm leading-6 text-muted-foreground sm:text-base">
@@ -378,7 +378,7 @@ function ConnectDialog({
                 {isConnected && wallet ? (
                   <div className="space-y-3">
                     <CredentialRow
-                      icon={<Wallet className="h-4 w-4 text-green-400" />}
+                      icon={<Wallet className="h-4 w-4 text-brand" />}
                       value={wallet}
                       onCopy={() => navigator.clipboard.writeText(wallet)}
                     />
@@ -474,7 +474,7 @@ function ConnectDialog({
                       <p className="text-xs text-red-400">{apiKeyError}</p>
                     )}
                     {apiKeySaved && (
-                      <p className="flex items-center gap-1 text-xs text-green-500">
+                      <p className="flex items-center gap-1 text-xs text-brand">
                         <Check className="h-3 w-3" />
                         API key saved
                       </p>
@@ -551,14 +551,14 @@ function StatusBadge({
       className={cn(
         "inline-flex w-fit items-center gap-2 rounded-full px-3 py-1 text-xs font-medium",
         active
-          ? "bg-green-500/10 text-green-400"
+          ? "bg-brand/10 text-brand"
           : "bg-muted/60 text-muted-foreground",
       )}
     >
       <span
         className={cn(
           "h-2 w-2 rounded-full",
-          active ? "bg-green-400" : "bg-muted-foreground/50",
+          active ? "bg-brand" : "bg-muted-foreground/50",
         )}
       />
       {label}

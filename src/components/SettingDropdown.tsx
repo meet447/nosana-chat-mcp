@@ -76,13 +76,13 @@ function ApiKeyDialog({ api }: { api: ApiConfig }) {
           type="password"
           placeholder={api.placeholder}
           value={key}
-          className="selection:bg-green-400"
+          className="selection:bg-brand"
           onChange={(e) => setKey(e.target.value)}
         />
         <DialogFooter className="sm:justify-start">
           <DialogClose asChild>
             <Button
-              className="bg-green-400 cursor-pointer hover:bg-green-600 text-sm"
+              className="bg-brand text-brand-foreground cursor-pointer hover:bg-brand/90 text-sm"
               type="button"
               onClick={async () => {
                 const isValid = await ping({

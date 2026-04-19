@@ -156,7 +156,7 @@ export function AgentTrace({ trace, isStreaming = false }: AgentTraceProps) {
                       isStart &&
                         "bg-amber-500/5 border-amber-500/20 hover:bg-amber-500/10",
                       isResult &&
-                        "bg-green-500/5 border-green-500/20 hover:bg-green-500/10",
+                        "bg-brand/5 border-brand/20 hover:bg-brand/10",
                       isError &&
                         "bg-red-500/5 border-red-500/20 hover:bg-red-500/10",
                     )}
@@ -173,7 +173,7 @@ export function AgentTrace({ trace, isStreaming = false }: AgentTraceProps) {
                       {isResult && (
                         <CheckCircle2
                           size={14}
-                          className="text-green-500 fill-green-500/20"
+                          className="text-brand fill-brand/20"
                         />
                       )}
                       {isError && (

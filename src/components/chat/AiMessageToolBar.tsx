@@ -101,7 +101,7 @@ export function MessageToolbar({ msg, tool }: MessageToolbarProps) {
               {msg.type}
             </span>
           ) : (
-            <span className="hidden sm:inline-block px-2 border border-dashed border-muted-foreground/20 sm:text-xs text-[10px] italic text-green-600">
+            <span className="hidden sm:inline-block px-2 border border-dashed border-muted-foreground/20 sm:text-xs text-[10px] italic text-brand">
               success
             </span>
           )}

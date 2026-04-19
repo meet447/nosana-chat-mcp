@@ -54,9 +54,9 @@ export const AskForm: React.FC<AskFormProps> = ({
     <form
       onSubmit={onSubmit}
       className={cn(
-        "flex w-[calc(100vw-1rem)] max-w-[800px] flex-col gap-1 overflow-hidden rounded-2xl border border-muted-foreground/10 bg-muted/80 shadow-md sm:w-[80vw] md:w-[70vw] lg:w-[60vw] xl:w-[50vw]",
+        "flex w-[calc(100vw-1rem)] max-w-[800px] flex-col gap-1 overflow-hidden rounded-2xl border border-border/60 bg-muted/80 shadow-md backdrop-blur supports-[backdrop-filter]:bg-muted/70 sm:w-[80vw] md:w-[70vw] lg:w-[60vw] xl:w-[50vw]",
+        mcp && "border-brand/30",
         className,
-        mcp && "rounded-none shadow-[4px_4px_0_#2f2e2a]",
       )}
     >
       <ChatInput
@@ -65,8 +65,7 @@ export const AskForm: React.FC<AskFormProps> = ({
         onKeyDown={handleKeyDown}
         placeholder={placeholder}
         textareaRef={textareaRef}
-        className={cn("rounded-t-lg py-3")}
-        mcp={mcp}
+        className="rounded-t-2xl py-3"
       />
 
       <div className="flex items-center gap-2 px-2 pb-2">
@@ -75,13 +74,12 @@ export const AskForm: React.FC<AskFormProps> = ({
             value={model || selectedModel}
             onValueChange={handleModelChange}
             className="min-w-0 flex-1 border-muted-foreground/10 bg-muted/5 sm:min-w-[12rem] sm:flex-none"
-            mcp={mcp}
           />
 
           {mcp && (
             <PhantomConnect
               compactMobile
-              className="h-8 shrink-0 rounded-xl border border-purple-400/40 bg-purple-600 px-3 text-sm text-white hover:bg-purple-500 sm:h-8 sm:w-auto sm:rounded-none"
+              className="h-8 shrink-0 rounded-md border border-purple-400/40 bg-purple-600 px-3 text-sm text-white hover:bg-purple-500"
             />
           )}
         </div>

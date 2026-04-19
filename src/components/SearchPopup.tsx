@@ -297,7 +297,7 @@ function SearchPopup({ setPopupOpen, chatHistory }: SearchPopupProps) {
                                         onClick={() => handleResultClick(cmd.action)}
                                     >
                                         <div className="flex items-center gap-3">
-                                            <div className="text-green-600">
+                                            <div className="text-brand">
                                                 {cmd.icon}
                                             </div>
                                             <div className="flex-1 min-w-0">
@@ -384,7 +384,7 @@ const HighlightText = ({ text, query }: { text: string; query: string }) => {
     return (
         <span>
             {text.substring(0, index)}
-            <mark className="text-green-500 bg-transparent px-1 rounded">
+            <mark className="text-brand bg-transparent px-1 rounded">
                 {text.substring(index, index + query.length)}
             </mark>
             {text.substring(index + query.length)}
