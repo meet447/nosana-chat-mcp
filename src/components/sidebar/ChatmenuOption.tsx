@@ -29,12 +29,12 @@ export function ChatOptionsMenu({
             <DropdownMenuTrigger asChild>
                 <button
                     className={cn(
-                        "block sm:invisible group-hover:visible p-1 hover:bg-muted-foreground/10 rounded transition-colors"
+                        "rounded p-1 text-muted-foreground/60 transition-colors hover:bg-muted-foreground/10 hover:text-foreground"
                     )}
                     onClick={(e) => e.stopPropagation()}
                     aria-label="Chat options"
                 >
-                    <Ellipsis className="size-4 text-muted-foreground/40 cursor-pointer" />
+                    <Ellipsis className="size-4 cursor-pointer" />
                 </button>
             </DropdownMenuTrigger>
 

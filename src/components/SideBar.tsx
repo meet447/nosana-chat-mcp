@@ -6,16 +6,13 @@ import { useChatStore } from "@/store/chat.store";
 import { useShallow } from "zustand/shallow";
 import { useRouter } from "next/navigation";
 import { LoginDropDown } from "./SettingDropdown";
-import { Button } from "./ui/button";
 import SearchPopup from "./SearchPopup";
 import { cn } from "@/lib/utils";
 import { useSettingsStore } from "@/store/setting.store";
 import { TemplatePopUP } from "./TemplatePop";
-import CurrentChatSection from "./sidebar/CurrentChat";
 import SidebarActions from "./sidebar/SidebarActions";
 import SidebarHeader from "./sidebar/SidebarHeader";
 import ChatListItem from "./sidebar/ChatListItem";
-import { Rocket } from "lucide-react";
 
 interface SideBarProps {
   onTemplateSelect?: (jobDefinition: Record<string, any>) => void;
@@ -40,16 +37,29 @@ export default function SideBar({ onTemplateSelect }: SideBarProps) {
       updateThreadTitle: state.updateThreadTitle,
     })),
   );
-  const { mobileOpen, toggleMobile, toggleTemplate, templateOpen } =
-    useSettingsStore(
-      useShallow((state) => ({
-        mobileOpen: state.mobileOpen,
-        toggleMobile: state.toggleMobile,
-        toggleTemplate: state.toggleTemplate,
-        templateOpen: state.templateOpen,
-      })),
-    );
-  const [barOpen, setBarOpen] = useState(true);
+
+  const {
+    mobileOpen,
+    toggleMobile,
+    toggleTemplate,
+    templateOpen,
+    sidebarCollapsed,
+    setLocalConfig,
+  } = useSettingsStore(
+    useShallow((state) => ({
+      mobileOpen: state.mobileOpen,
+      toggleMobile: state.toggleMobile,
+      toggleTemplate: state.toggleTemplate,
+      templateOpen: state.templateOpen,
+      sidebarCollapsed: state.localConfig.sidebarCollapsed,
+      setLocalConfig: state.setLocalConfig,
+    })),
+  );
+
+  const barOpen = !sidebarCollapsed;
+  const setBarOpen = (open: boolean) =>
+    setLocalConfig({ sidebarCollapsed: !open });
+
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editContent, setEditContent] = useState<string>("");
   const [popupOpen, setPopupOpen] = useState(false);
@@ -68,14 +78,18 @@ export default function SideBar({ onTemplateSelect }: SideBarProps) {
 
   useEffect(() => {
     const root = document.documentElement;
-    const sidebarWidth =
-      window.innerWidth >= 1024 ? (barOpen ? "260px" : "60px") : "0px";
-    root.style.setProperty("--sidebar-width", sidebarWidth);
-
+    const update = () => {
+      const isDesktop = window.innerWidth >= 1024;
+      const width = isDesktop ? (barOpen ? "260px" : "60px") : "0px";
+      root.style.setProperty("--sidebar-width", width);
+    };
+    update();
+    window.addEventListener("resize", update);
     return () => {
+      window.removeEventListener("resize", update);
       root.style.setProperty("--sidebar-width", "0px");
     };
-  }, [barOpen, mobileOpen, height]);
+  }, [barOpen]);
 
   const handleOldChat = (id: string) => {
     useChatStore.getState().setSelectedChatId(id);
@@ -125,8 +139,9 @@ export default function SideBar({ onTemplateSelect }: SideBarProps) {
 
     if (diffDays === 0) return "Today";
     if (diffDays === 1) return "Yesterday";
-    if (diffDays < 7) return "Last Week";
-    return "Last Month";
+    if (diffDays < 7) return "Last week";
+    if (diffDays < 30) return "This month";
+    return "Older";
   };
 
   const groupedChats = useMemo(() => {
@@ -157,17 +172,20 @@ export default function SideBar({ onTemplateSelect }: SideBarProps) {
         className={cn(
           "flex h-full flex-col justify-between border-r border-muted-foreground/10 bg-muted text-muted-foreground",
           "transition-[width,opacity] duration-300 ease-in-out lg:relative",
-          mobileOpen ? "fixed inset-y-0 left-0 z-50 shadow-2xl" : "hidden lg:flex",
-          barOpen ? "w-[min(86vw,320px)] opacity-100 lg:w-[260px]" : "w-[60px] opacity-90",
+          mobileOpen
+            ? "fixed inset-y-0 left-0 z-50 shadow-2xl"
+            : "hidden lg:flex",
+          barOpen
+            ? "w-[min(86vw,320px)] opacity-100 lg:w-[260px]"
+            : "w-[60px] opacity-95",
         )}
         style={{ height: height ? `${height}px` : undefined }}
       >
-        <div className="py-4 px-3 flex flex-col gap-4">
+        <div className="flex flex-col gap-4 px-3 py-4">
           <SidebarHeader
             barOpen={barOpen}
             setBarOpen={setBarOpen}
             toggleMobile={toggleMobile}
-            router={router}
           />
           <SidebarActions
             barOpen={barOpen}
@@ -177,37 +195,13 @@ export default function SideBar({ onTemplateSelect }: SideBarProps) {
           />
         </div>
 
-        {barOpen && (
-          <div className="px-3">
-            <Button
-              onClick={() => router.push("/ask?tool=deployer")}
-              className="w-full rounded mb-2 border text-brand-foreground border-muted-foreground bg-brand hover:bg-brand/90 cursor-pointer"
-            >
-              nosana deployer
-              <Rocket className="text-brand-foreground" />
-            </Button>
-          </div>
-        )}
-
-        <CurrentChatSection
-          barOpen={barOpen}
-          selectedChatId={selectedChatId}
-          chatHistory={chatHistory}
-          onExport={handleExport}
-          onDelete={handleDelete}
-          setEditingId={setEditingId}
-          setEditContent={setEditContent}
-        />
-
         <div
           hidden={!barOpen}
-          className="flex-1 overflow-y-auto scrollbar-hide px-3 
-                        [&::-webkit-scrollbar]:hidden [&::-webkit-scrollbar-thumb]:hidden 
-                        [&::-webkit-scrollbar-track]:hidden [scrollbar-width:none]"
+          className="scrollbar-hide flex-1 overflow-y-auto px-3 [scrollbar-width:none] [&::-webkit-scrollbar-thumb]:hidden [&::-webkit-scrollbar-track]:hidden [&::-webkit-scrollbar]:hidden"
         >
           {Object.entries(groupedChats).map(([label, items]) => (
             <div key={label} className="mb-4">
-              <div className="text-muted-foreground/40 text-xs mb-2">
+              <div className="mb-1.5 px-2 text-[11px] font-medium uppercase tracking-wider text-muted-foreground/50">
                 {label}
               </div>
               {items.map((item) => (
@@ -230,6 +224,11 @@ export default function SideBar({ onTemplateSelect }: SideBarProps) {
               ))}
             </div>
           ))}
+          {chatHistory.length === 0 && barOpen && (
+            <div className="px-2 py-4 text-xs text-muted-foreground/50">
+              No chats yet. Start a new conversation.
+            </div>
+          )}
         </div>
 
         {popupOpen && (
