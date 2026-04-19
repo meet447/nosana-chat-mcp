@@ -9,7 +9,6 @@ import {
   useCallback,
 } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { ArrowRightFromLine } from "lucide-react";
 import { Footer } from "@/components/Footer";
 import { useChatLogic } from "@/hooks/useChatLogic";
 import { deployerQuestions, questions } from "@/lib/utils/questions";
@@ -33,7 +32,6 @@ function AskPage() {
   const [randomQuestions, setRandomQuestions] = useState<typeof questions>([]);
   const {
     localConfig: { appearance },
-    toggleMobile,
   } = useSettingsStore();
   const textref = useRef<HTMLTextAreaElement>(
     null,
@@ -128,19 +126,6 @@ function AskPage() {
         <SideBar onTemplateSelect={handleTemplateSelect} />
       </div>
 
-      {!mcp && (
-        <button
-          onClick={() => toggleMobile()}
-          type="button"
-          className="fixed left-3 z-40 rounded-full border border-border/60 bg-background/90 p-2 shadow-md backdrop-blur lg:hidden"
-          style={{ top: "max(0.75rem, env(safe-area-inset-top))" }}
-        >
-          <ArrowRightFromLine
-            className={cn("cursor-pointer lg:hidden text-muted-foreground")}
-          />
-        </button>
-      )}
-
       <div
         className={cn(
           "w-full flex-col flex min-h-screen transition-colors duration-500",
@@ -148,16 +133,13 @@ function AskPage() {
           "bg-background text-foreground",
         )}
       >
-        {mcp && (
-          <div className="sticky top-0 z-40 w-full">
-            <ChatNavBar onTemplateSelect={handleTemplateSelect} />
-          </div>
-        )}
+        <div className="sticky top-0 z-40 w-full">
+          <ChatNavBar onTemplateSelect={handleTemplateSelect} />
+        </div>
 
         <div
           className={cn(
-            "flex flex-1 flex-col items-center justify-center px-4 pb-32 pt-16 sm:px-6 md:pb-20",
-            mcp && "pt-0",
+            "flex flex-1 flex-col items-center justify-center px-4 pb-32 pt-8 sm:px-6 md:pb-20",
           )}
         >
           <div className="flex w-full flex-col items-center md:-translate-y-6">

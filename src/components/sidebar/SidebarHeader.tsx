@@ -98,7 +98,7 @@ const SidebarHeader = ({
             className={cn(
               "flex flex-1 cursor-pointer items-center justify-center gap-1.5 rounded-md px-2 py-1.5 text-xs font-medium transition-colors",
               !isDeployer
-                ? "bg-muted text-foreground shadow-sm"
+                ? "bg-brand text-brand-foreground shadow-sm"
                 : "text-muted-foreground hover:text-foreground",
             )}
           >
@@ -130,7 +130,7 @@ const SidebarHeader = ({
             className={cn(
               "flex h-8 w-8 cursor-pointer items-center justify-center rounded-md transition-colors",
               !isDeployer
-                ? "bg-muted text-foreground"
+                ? "bg-brand text-brand-foreground"
                 : "text-muted-foreground/70 hover:bg-muted-foreground/10 hover:text-foreground",
             )}
           >

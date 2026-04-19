@@ -139,11 +139,9 @@ function ChatNavBar({ className, onTemplateSelect }: ChatNavBarProps) {
               <Pencil className="size-3 shrink-0 text-muted-foreground/40 transition-colors group-hover:text-muted-foreground" />
             </button>
           ) : (
-            isDeployer && (
-              <span className="truncate px-2 text-sm text-muted-foreground">
-                Deployer
-              </span>
-            )
+            <span className="truncate px-2 text-sm text-muted-foreground">
+              {isDeployer ? "Deployer" : "New chat"}
+            </span>
           )}
         </div>
 

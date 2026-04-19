@@ -27,6 +27,7 @@ export default function SideBar({ onTemplateSelect }: SideBarProps) {
     selectedChatId,
     exportThread,
     updateThreadTitle,
+    tool,
   } = useChatStore(
     useShallow((state) => ({
       loadChatHistory: state.loadChatHistory,
@@ -35,8 +36,11 @@ export default function SideBar({ onTemplateSelect }: SideBarProps) {
       selectedChatId: state.selectedChatId,
       exportThread: state.exportThread,
       updateThreadTitle: state.updateThreadTitle,
+      tool: state.tool,
     })),
   );
+
+  const isDeployerMode = tool === "deployer";
 
   const {
     mobileOpen,
@@ -117,7 +121,7 @@ export default function SideBar({ onTemplateSelect }: SideBarProps) {
 
   const handleNewChat = () => {
     if (mobileOpen) toggleMobile();
-    redirect("/ask");
+    redirect(isDeployerMode ? "/ask?tool=deployer" : "/ask");
   };
 
   const handleEditSave = (id: string, title: string) => {
@@ -144,9 +148,17 @@ export default function SideBar({ onTemplateSelect }: SideBarProps) {
     return "Older";
   };
 
+  const visibleChats = useMemo(
+    () =>
+      chatHistory.filter((c) =>
+        isDeployerMode ? c.tool === "deployer" : c.tool !== "deployer",
+      ),
+    [chatHistory, isDeployerMode],
+  );
+
   const groupedChats = useMemo(() => {
     const groups: Record<string, typeof chatHistory> = {};
-    [...chatHistory]
+    [...visibleChats]
       .sort((a, b) => Number(b.thread_id) - Number(a.thread_id))
       .forEach((item) => {
         const label = getTimeLabel(Number(item.thread_id));
@@ -154,7 +166,7 @@ export default function SideBar({ onTemplateSelect }: SideBarProps) {
         groups[label].push(item);
       });
     return groups;
-  }, [chatHistory]);
+  }, [visibleChats]);
 
   return (
     <>
@@ -224,15 +236,17 @@ export default function SideBar({ onTemplateSelect }: SideBarProps) {
               ))}
             </div>
           ))}
-          {chatHistory.length === 0 && barOpen && (
+          {visibleChats.length === 0 && barOpen && (
             <div className="px-2 py-4 text-xs text-muted-foreground/50">
-              No chats yet. Start a new conversation.
+              {isDeployerMode
+                ? "No deployer chats yet. Start a new deployment."
+                : "No chats yet. Start a new conversation."}
             </div>
           )}
         </div>
 
         {popupOpen && (
-          <SearchPopup setPopupOpen={setPopupOpen} chatHistory={chatHistory} />
+          <SearchPopup setPopupOpen={setPopupOpen} chatHistory={visibleChats} />
         )}
         {templateOpen && onTemplateSelect && (
           <TemplatePopUP
