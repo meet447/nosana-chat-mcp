@@ -164,9 +164,6 @@ function AskPage() {
             <div className="mb-8 text-center">
               {mcp ? (
                 <div className="flex flex-col items-center gap-2">
-                  <div className="inline-flex items-center gap-2 rounded-full border border-brand/30 bg-brand/10 px-3 py-1 text-[11px] font-medium uppercase tracking-[0.2em] text-brand">
-                    Deployer mode
-                  </div>
                   <h1 className="text-3xl font-extralight text-foreground sm:text-4xl">
                     <span className="font-bold text-brand">NOSANA</span>
                     <span className="mx-2 text-muted-foreground/40">·</span>
