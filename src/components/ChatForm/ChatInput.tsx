@@ -10,7 +10,6 @@ interface ChatInputProps {
   placeholder?: string;
   className?: string;
   textareaRef?: React.RefObject<HTMLTextAreaElement>;
-  mcp?: boolean
 }
 
 export const ChatInput: React.FC<ChatInputProps> = ({
@@ -21,7 +20,6 @@ export const ChatInput: React.FC<ChatInputProps> = ({
   placeholder = "Type your message...",
   className,
   textareaRef,
-  mcp=false
 }) => {
   const internalTextareaRef = useRef<HTMLTextAreaElement>(null);
   const actualRef = textareaRef || internalTextareaRef;
@@ -51,9 +49,8 @@ export const ChatInput: React.FC<ChatInputProps> = ({
       onFocus={handleFocus}
       onKeyDown={onKeyDown}
       className={cn(
-        "min-h-12 w-full resize-none rounded-t-lg bg-muted-foreground/10 p-3 text-sm text-muted-foreground focus:outline-none focus:ring-black/10 sm:min-h-16 sm:p-2",
+        "min-h-12 w-full resize-none bg-transparent p-3 text-sm text-foreground placeholder:text-muted-foreground/60 focus:outline-none sm:min-h-16 sm:p-3",
         className,
-        mcp && "rounded-none"
       )}
     />
   );

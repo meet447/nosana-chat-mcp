@@ -19,14 +19,12 @@ interface ModelSelectorProps {
   value: string;
   onValueChange: (value: string) => void;
   className?: string;
-  mcp?: boolean;
 }
 
 export const ModelSelector: React.FC<ModelSelectorProps> = ({
   value,
   onValueChange,
   className,
-  mcp,
 }) => {
   const searchParams = useSearchParams();
   const customServiceUrl =
@@ -76,7 +74,6 @@ export const ModelSelector: React.FC<ModelSelectorProps> = ({
         className={cn(
           "h-8 w-full min-w-0 border border-muted-foreground/20 bg-muted/50 text-xs font-normal text-foreground sm:w-fit",
           className,
-          mcp && "rounded-none",
         )}
         data-size="sm"
         disabled={isLoading}
