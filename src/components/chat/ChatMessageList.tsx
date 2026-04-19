@@ -1,22 +1,8 @@
-/* eslint-disable */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 
-import React, {
-  memo,
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-} from "react";
+import React, { memo, useCallback, useEffect, useMemo, useRef } from "react";
 import ChatMessage from "./ChatMessage";
-import ReactMarkdown from "react-markdown";
-import remarkGfm from "remark-gfm";
-import { ReasoningSection } from "./ReasoningSection";
-import { AgentTrace } from "./AgentTrace";
-import { StreamContent } from "./StreamContent";
-import rehypeHighlight from "rehype-highlight";
-import { Conversation, useChatStore } from "@/store/chat.store";
-import { useShallow } from "zustand/shallow";
-import PermissionRequest from "../UserPermission";
+import { Conversation } from "@/store/chat.store";
 
 interface ChatMessageListProps {
   conversations: Conversation[];
@@ -31,284 +17,129 @@ interface ChatMessageListProps {
   streamItems?: any[];
 }
 
-const ChatMessageList = memo(
-  ({
-    conversations,
-    state,
-    reasoningChunks,
-    llmChunks,
-    scrollRef,
-    event,
-    setQuery,
-    textareaRef,
-    onSubmit,
-    streamItems = [],
-  }: ChatMessageListProps) => {
-    const prevLen = useRef(conversations.length);
-    const prevLastMessageId = useRef<string | undefined>(
-      conversations[conversations.length - 1]?.id,
-    );
-    const scrollContainerRef = useRef<HTMLDivElement | null>(null);
+const STREAMING_ID = "__streaming__";
 
-    const { pendingPermission } = useChatStore(
-      useShallow((state) => ({ pendingPermission: state.pendingPermission })),
-    );
+const ChatMessageList = memo(function ChatMessageList({
+  conversations,
+  state,
+  reasoningChunks,
+  llmChunks,
+  scrollRef,
+  event,
+  setQuery,
+  textareaRef,
+  onSubmit,
+  streamItems = [],
+}: ChatMessageListProps) {
+  const prevLen = useRef(conversations.length);
+  const prevLastMessageId = useRef<string | undefined>(
+    conversations[conversations.length - 1]?.id,
+  );
+  const scrollContainerRef = useRef<HTMLDivElement | null>(null);
 
-    const reasoningRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const lastMessage = conversations[conversations.length - 1];
+    const lastMessageId = lastMessage?.id;
+    const hasNewLastMessage = lastMessageId !== prevLastMessageId.current;
 
-    // Memoize markdown components to prevent recreation on every render
-    const markdownComponents = useMemo(
-      () => ({
-        table({ node, ...props }: any) {
-          return (
-            <div style={{ overflowX: "auto", maxWidth: "100%" }}>
-              <table {...props} className="markdown-table" />
-            </div>
-          );
-        },
-      }),
-      [],
-    );
+    if (
+      conversations.length <= prevLen.current ||
+      !hasNewLastMessage ||
+      lastMessage?.role !== "user"
+    ) {
+      return;
+    }
 
-    const reasoningContent = reasoningChunks;
-    const llmContent = llmChunks;
+    const scrollToLatestUserMessage = () => {
+      const container = scrollContainerRef.current;
+      if (!container || !lastMessageId) return;
 
-    useEffect(() => {
-      if (reasoningRef.current) {
-        reasoningRef.current.scrollTop = reasoningRef.current.scrollHeight;
-      }
-    }, [reasoningChunks]);
+      const messageElement = container.querySelector(
+        `[data-message-id="${lastMessageId}"]`,
+      );
 
-    useEffect(() => {
-      const lastMessage = conversations[conversations.length - 1];
-      const lastMessageId = lastMessage?.id;
-      const hasNewLastMessage = lastMessageId !== prevLastMessageId.current;
+      if (!(messageElement instanceof HTMLElement)) return;
 
-      if (
-        conversations.length <= prevLen.current ||
-        !hasNewLastMessage ||
-        lastMessage?.role !== "user"
-      ) {
-        return;
-      }
+      const nextScrollTop = Math.max(messageElement.offsetTop - 8, 0);
+      container.scrollTo({
+        top: nextScrollTop,
+        behavior: "smooth",
+      });
+    };
 
-      const scrollToLatestUserMessage = () => {
-        const container = scrollContainerRef.current;
-        if (!container || !lastMessageId) return;
+    requestAnimationFrame(scrollToLatestUserMessage);
+    const retry1 = setTimeout(scrollToLatestUserMessage, 120);
+    const retry2 = setTimeout(scrollToLatestUserMessage, 320);
 
-        const messageElement = container.querySelector(
-          `[data-message-id="${lastMessageId}"]`,
-        );
+    return () => {
+      clearTimeout(retry1);
+      clearTimeout(retry2);
+    };
+  }, [conversations]);
 
-        if (!(messageElement instanceof HTMLElement)) return;
+  useEffect(() => {
+    prevLen.current = conversations.length;
+    prevLastMessageId.current = conversations[conversations.length - 1]?.id;
+  }, [conversations]);
 
-        const nextScrollTop = Math.max(messageElement.offsetTop - 8, 0);
-        container.scrollTo({
-          top: nextScrollTop,
-          behavior: "smooth",
-        });
-      };
+  useEffect(() => {
+    if (scrollRef) {
+      scrollRef.current = scrollContainerRef.current;
+    }
+  }, [scrollRef]);
 
-      requestAnimationFrame(scrollToLatestUserMessage);
-      const retry1 = setTimeout(scrollToLatestUserMessage, 120);
-      const retry2 = setTimeout(scrollToLatestUserMessage, 320);
+  const isStreaming = state === "loading";
 
-      return () => {
-        clearTimeout(retry1);
-        clearTimeout(retry2);
-      };
-    }, [conversations]);
+  const streamingMsg = useMemo(
+    () =>
+      isStreaming
+        ? {
+            id: STREAMING_ID,
+            role: "model",
+            content: llmChunks,
+            reasoning: reasoningChunks,
+            streamItems,
+          }
+        : null,
+    [isStreaming, llmChunks, reasoningChunks, streamItems],
+  );
 
-    useEffect(() => {
-      prevLen.current = conversations.length;
-      prevLastMessageId.current = conversations[conversations.length - 1]?.id;
-    }, [conversations]);
-
-    useEffect(() => {
-      if (scrollRef) {
-        scrollRef.current = scrollContainerRef.current;
-      }
-    }, [scrollRef]);
-
-    const virtuosoContext = useMemo(
-      () => ({
-        state,
-        reasoningChunks,
-        llmChunks,
-        event,
-        markdownComponents,
-        pendingPermission,
-        streamItems,
-      }),
-      [
-        state,
-        reasoningChunks,
-        llmChunks,
-        event,
-        markdownComponents,
-        pendingPermission,
-        streamItems,
-      ],
-    );
-
-    const renderItem = useCallback(
-      (index: number, msg: any) => (
-        <ChatMessage
-          key={msg.id || index}
-          msg={msg}
-          index={index}
-          conversations={conversations}
-          setQuery={setQuery}
-          textareaRef={textareaRef}
-          onSubmit={onSubmit}
-        />
-      ),
-      [conversations, setQuery, textareaRef, onSubmit],
-    );
-
-    return (
-      <div className="min-h-0 h-full w-full max-w-[800px] flex-1 px-1 pb-24 sm:w-[80vw] sm:px-0 sm:pb-28 md:w-[70vw] lg:w-[60vw] xl:w-[60vw]">
-        <div
-          ref={scrollContainerRef}
-          className="h-full w-full overflow-y-auto"
-        >
-          {conversations.map((msg, index) => renderItem(index, msg))}
-          <ChatFooter context={virtuosoContext} />
-        </div>
-      </div>
-    );
-  },
-);
-
-export default ChatMessageList;
-
-const ChatFooter = memo(({ context }: { context: any }) => {
-  const {
-    state,
-    reasoningChunks,
-    llmChunks,
-    event,
-    markdownComponents,
-    pendingPermission,
-    streamItems = [],
-  } = context;
-
-  if (
-    state !== "loading" &&
-    !reasoningChunks &&
-    !llmChunks &&
-    streamItems.length === 0
-  ) {
-    return <div className="h-4" />;
-  }
+  const renderItem = useCallback(
+    (index: number, msg: any) => (
+      <ChatMessage
+        key={msg.id || index}
+        msg={msg}
+        index={index}
+        conversations={conversations}
+        setQuery={setQuery}
+        textareaRef={textareaRef}
+        onSubmit={onSubmit}
+      />
+    ),
+    [conversations, setQuery, textareaRef, onSubmit],
+  );
 
   return (
-    <>
-      {state === "loading" && (
-        <div className="flex relative justify-start mt-1 items-start gap-4 w-full mb-5 self-start">
-          <div className="min-w-[95%] w-[100%] flex flex-col gap-2">
-            {reasoningChunks?.length > 0 && (
-              <ReasoningSection
-                reasoning={reasoningChunks}
-                isStreaming={true}
-                hasNormalResponseStarted={
-                  llmChunks.length > 0 || streamItems.length > 0
-                }
-              />
-            )}
+    <div className="min-h-0 h-full w-full max-w-[800px] flex-1 px-1 pb-24 sm:w-[80vw] sm:px-0 sm:pb-28 md:w-[70vw] lg:w-[60vw] xl:w-[60vw]">
+      <div ref={scrollContainerRef} className="h-full w-full overflow-y-auto">
+        {conversations.map((msg, index) => renderItem(index, msg))}
 
-            {streamItems.length > 0 ? (
-              <>
-                <div className="flex items-center gap-4 text-muted-foreground/50 mb-2">
-                  <PulseCircle size={0.8} colorClass="bg-muted-foreground/50" />
-                  <span className="flex-1 flex items-center">
-                    {event || "streaming..."}
-                  </span>
-                </div>
-                <div
-                  style={{
-                    paddingLeft: "5px",
-                    paddingRight: "5px",
-                    paddingTop: "0px",
-                    paddingBlock: "0px",
-                    margin: "0px",
-                    backgroundColor: "transparent",
-                  }}
-                  className="rounded-lg mt-3 markdown-container markdown-body text-sm max-w-none"
-                >
-                  <StreamContent
-                    items={streamItems}
-                    markdownComponents={markdownComponents}
-                    isStreaming={state === "loading"}
-                  />
-                </div>
-              </>
-            ) : (
-              <div
-                style={{
-                  paddingLeft: "10px",
-                  paddingRight: "5px",
-                  paddingTop: "0px",
-                  paddingBlock: "0px",
-                  margin: "0px",
-                  backgroundColor: "transparent",
-                }}
-                className="markdown-container rounded-lg mt-3 w-full text-foreground text-sm prose prose-sm max-w-none"
-              >
-                <div className="flex items-center gap-4 text-muted-foreground/50 mb-2">
-                  <PulseCircle size={0.8} colorClass="bg-muted-foreground/50" />
-                  <span className="flex-1 flex items-center">
-                    {event || "streaming..."}
-                  </span>
-                </div>
-                <ReactMarkdown
-                  remarkPlugins={[remarkGfm]}
-                  rehypePlugins={[[rehypeHighlight, { ignoreMissing: true }]]}
-                  components={markdownComponents}
-                >
-                  {llmChunks}
-                </ReactMarkdown>
+        {streamingMsg && (
+          <ChatMessage
+            msg={streamingMsg}
+            isStreaming
+            event={event}
+            hasNormalResponseStarted={
+              (llmChunks?.length ?? 0) > 0 ||
+              (streamItems?.length ?? 0) > 0
+            }
+          />
+        )}
 
-                {pendingPermission && (
-                  <PermissionRequest
-                    toolName={pendingPermission.toolName}
-                    args={pendingPermission.args}
-                    onAllow={pendingPermission.onAllow}
-                    onDeny={pendingPermission.onDeny}
-                  />
-                )}
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-      <div className="h-4" />
-    </>
+        <div className="h-4" />
+      </div>
+    </div>
   );
 });
 
-const PulseCircle: React.FC<{ size?: number; colorClass?: string }> = ({
-  size = 4,
-  colorClass = "bg-muted-foreground/20",
-}) => {
-  return (
-    <div
-      className={`rounded-full ${colorClass}`}
-      style={{
-        width: `${size}rem`,
-        height: `${size}rem`,
-        display: "inline-block",
-        animation: "pulseScale 1s ease-in-out infinite",
-      }}
-    >
-      <style>
-        {`
-          @keyframes pulseScale {
-            0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.5); }
-          }
-        `}
-      </style>
-    </div>
-  );
-};
+export default ChatMessageList;

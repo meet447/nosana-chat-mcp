@@ -47,7 +47,7 @@ export function ReasoningSection({
   if (!reasoning && !isStreaming) return null;
 
   return (
-    <div className="mb-4 group/reasoning px-0.5">
+    <div className="group/reasoning px-0.5">
       <Collapsible open={isOpen} onOpenChange={setIsOpen}>
         <div className="flex items-center gap-3">
           <CollapsibleTrigger asChild>

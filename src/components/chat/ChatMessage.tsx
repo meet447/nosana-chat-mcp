@@ -1,8 +1,10 @@
-/* eslint-disable */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { memo, useEffect, useMemo } from "react";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
+import rehypeHighlight from "rehype-highlight";
 import { ToolExecDialog } from "./ToolExecDialog";
 import { useChatStore } from "@/store/chat.store";
-import { cn } from "@/lib/utils";
 import { useSettingsStore } from "@/store/setting.store";
 import MarkdownComponent from "./MarkdownComponent";
 import FollowUP from "./FollowUps";
@@ -12,95 +14,154 @@ import { SearchResultsSection } from "./SearchResultsSection";
 import { MessageToolbar } from "./AiMessageToolBar";
 import { AgentTrace } from "./AgentTrace";
 import { StreamContent } from "./StreamContent";
+import { StreamingHeader } from "./StreamingHeader";
+import PermissionRequest from "../UserPermission";
 import { useShallow } from "zustand/shallow";
 
-const ChatMessage = memo(
-  ({ msg, index, conversations, setQuery, textareaRef, onSubmit }: any) => {
-    const { tool } = useChatStore(
-      useShallow((state) => ({ tool: state.tool })),
-    );
-    const { appearance } = useSettingsStore(
-      useShallow((state) => ({ appearance: state.localConfig.appearance })),
-    );
+interface ChatMessageProps {
+  msg: any;
+  index?: number;
+  conversations?: any[];
+  setQuery?: (q: string) => void;
+  textareaRef?: React.RefObject<HTMLTextAreaElement | null>;
+  onSubmit?: (question: string) => void;
+  isStreaming?: boolean;
+  event?: string;
+  hasNormalResponseStarted?: boolean;
+}
 
-    useEffect(() => {
-      if (appearance == "dark") {
-        import("highlight.js/styles/atom-one-dark.css");
-      } else {
-        import("highlight.js/styles/github.css");
-      }
-    }, [appearance]);
+const contentStyle: React.CSSProperties = {
+  paddingLeft: "5px",
+  paddingRight: "5px",
+  margin: "0px",
+  backgroundColor: "transparent",
+};
 
-    const markdownComponents = useMemo(
-      () => ({
-        table({ node, ...props }: any) {
-          return (
-            <div style={{ overflowX: "auto", maxWidth: "100%" }}>
-              <table {...props} className="markdown-table" />
-            </div>
-          );
-        },
-      }),
-      [],
-    );
+const ChatMessage = memo(function ChatMessage({
+  msg,
+  index,
+  conversations = [],
+  setQuery,
+  textareaRef,
+  onSubmit,
+  isStreaming = false,
+  event,
+  hasNormalResponseStarted = false,
+}: ChatMessageProps) {
+  const { tool, pendingPermission } = useChatStore(
+    useShallow((s) => ({
+      tool: s.tool,
+      pendingPermission: s.pendingPermission,
+    })),
+  );
+  const appearance = useSettingsStore((s) => s.localConfig.appearance);
 
-    if (msg.role === "user") return <UserMessage msg={msg} />;
+  useEffect(() => {
+    if (appearance === "dark") {
+      import("highlight.js/styles/atom-one-dark.css");
+    } else {
+      import("highlight.js/styles/github.css");
+    }
+  }, [appearance]);
 
-    return (
-      <div className={cn("flex mt-8 justify-start mb-4")}>
-        <div className="min-w-[95%] w-[100%] flex flex-col gap-2">
-          {/* Reasoning preview */}
-          {msg.reasoning && <ReasoningSection reasoning={msg.reasoning} />}
+  const markdownComponents = useMemo(
+    () => ({
+      table({ ...props }: any) {
+        return (
+          <div style={{ overflowX: "auto", maxWidth: "100%" }}>
+            <table {...props} className="markdown-table" />
+          </div>
+        );
+      },
+    }),
+    [],
+  );
 
-          {/* search Result */}
-          {msg.search && msg.search.length > 0 && (
-            <SearchResultsSection search={msg.search} />
-          )}
+  if (msg.role === "user") return <UserMessage msg={msg} />;
 
-          {msg.streamItems && msg.streamItems.length > 0 ? (
+  const hasStreamItems =
+    Array.isArray(msg.streamItems) && msg.streamItems.length > 0;
+  const isLastInConversation =
+    typeof index === "number" && index === conversations.length - 1;
+
+  return (
+    <div className="mt-3 mb-3 flex justify-start">
+      <div className="flex w-full flex-col gap-1.5 px-3 sm:px-2">
+        {msg.reasoning ? (
+          <ReasoningSection
+            reasoning={msg.reasoning}
+            isStreaming={isStreaming}
+            hasNormalResponseStarted={hasNormalResponseStarted}
+          />
+        ) : null}
+
+        {!isStreaming && msg.search && msg.search.length > 0 ? (
+          <SearchResultsSection search={msg.search} />
+        ) : null}
+
+        {isStreaming && <StreamingHeader event={event} />}
+
+        {hasStreamItems ? (
+          <div
+            style={contentStyle}
+            className="markdown-container markdown-body max-w-none rounded-lg text-sm"
+          >
+            <StreamContent
+              items={msg.streamItems}
+              markdownComponents={markdownComponents}
+              isStreaming={isStreaming}
+            />
+          </div>
+        ) : (
+          <>
+            {!isStreaming && msg.trace && msg.trace.length > 0 && (
+              <AgentTrace trace={msg.trace} />
+            )}
             <div
-              style={{ paddingLeft: "5px", paddingRight: "5px", margin: "0px", backgroundColor: "transparent" }}
-              className="rounded-lg mt-3 markdown-container markdown-body text-sm max-w-none"
+              style={contentStyle}
+              className="markdown-container markdown-body max-w-none rounded-lg text-sm"
             >
-              <StreamContent
-                items={msg.streamItems}
-                markdownComponents={markdownComponents}
-                isStreaming={false}
-              />
-            </div>
-          ) : (
-            <>
-              {msg.trace && msg.trace.length > 0 && (
-                <AgentTrace trace={msg.trace} />
-              )}
-              <div
-                style={{ paddingLeft: "5px", paddingRight: "5px", paddingTop: "0px", paddingBlock: "0px", margin: "0px", backgroundColor: "transparent" }}
-                className="rounded-lg mt-3 markdown-container markdown-body text-sm max-w-none"
-              >
+              {isStreaming ? (
+                <ReactMarkdown
+                  remarkPlugins={[remarkGfm]}
+                  rehypePlugins={[[rehypeHighlight, { ignoreMissing: true }]]}
+                  components={markdownComponents}
+                >
+                  {msg.content || ""}
+                </ReactMarkdown>
+              ) : (
                 <MarkdownComponent msg={msg} />
-              </div>
-            </>
-          )}
+              )}
+            </div>
+          </>
+        )}
 
-          {/* tool execution dialog box , show run tool */}
-          {tool && index === conversations.length - 1 && <ToolExecDialog />}
+        {isStreaming && pendingPermission && (
+          <PermissionRequest
+            toolName={pendingPermission.toolName}
+            args={pendingPermission.args}
+            onAllow={pendingPermission.onAllow}
+            onDeny={pendingPermission.onDeny}
+          />
+        )}
 
-          {/* control Button */}
-          <MessageToolbar msg={msg} tool={tool} />
+        {!isStreaming && tool && isLastInConversation && <ToolExecDialog />}
 
-          {/* follow up's goes here */}
-          {msg.followUps?.length > 0 && index === conversations.length - 1 && (
+        {!isStreaming && <MessageToolbar msg={msg} tool={tool} />}
+
+        {!isStreaming &&
+          msg.followUps?.length > 0 &&
+          isLastInConversation && (
             <FollowUP
-              textareaRef={textareaRef}
+              textareaRef={textareaRef as any}
               followUPs={msg.followUps}
-              setQuery={setQuery}
+              setQuery={setQuery || (() => {})}
               onSubmit={onSubmit}
             />
           )}
-        </div>
       </div>
-    );
-  },
-);
+    </div>
+  );
+});
 
 export default ChatMessage;
