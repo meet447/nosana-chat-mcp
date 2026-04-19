@@ -41,14 +41,14 @@ function ChatNavBar({ className, onTemplateSelect }: ChatNavBarProps) {
                             aria-label="Toggle deployment templates"
                             className="rounded-md p-2 transition-colors hover:bg-muted-foreground/10 touch-manipulation"
                         >
-                            <LayoutGrid className='text-green-500' />
+                            <LayoutGrid className='text-brand' />
                         </button>
                     )}
 
                     {currentChat.length > 0 && <Button
                         title="Export chat"
                         onClick={() => selectedChatId && currentChat?.length > 0 && exportThread(selectedChatId)}
-                        className="h-9 bg-green-500 text-sm cursor-pointer items-center hover:bg-green-400 sm:scale-90"><span className="hidden xl:block">export </span> <Download />
+                        className="h-9 bg-brand text-brand-foreground text-sm cursor-pointer items-center hover:bg-brand/90 sm:scale-90"><span className="hidden xl:block">export </span> <Download />
                     </Button>}
                 </div>
             </div>

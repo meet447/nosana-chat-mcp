@@ -195,7 +195,7 @@ export default function DummyGpuFrontend() {
       {/* Wallet Status Display */}
       <div className="text-center">
         {wallet ? (
-          <div className="text-green-400 text-sm">
+          <div className="text-brand text-sm">
             ✅ Connected: {wallet.slice(0, 6)}...{wallet.slice(-6)}
           </div>
         ) : (
@@ -263,7 +263,7 @@ export default function DummyGpuFrontend() {
           <button
             onClick={handleExtendJob}
             disabled={loading}
-            className="bg-green-500 hover:bg-green-600 px-5 py-2 rounded-md font-semibold"
+            className="bg-brand text-brand-foreground hover:bg-brand/90 px-5 py-2 rounded-md font-semibold"
           >
             {loading ? "Extending..." : "Extend Job"}
           </button>
@@ -301,7 +301,7 @@ export default function DummyGpuFrontend() {
                     <td className="px-3 py-2">{job.status}</td>
                     <td className="px-3 py-2 truncate">{job.market}</td>
                     <td className="px-3 py-2 truncate">{job.node}</td>
-                    <td className="px-3 py-2 text-xs text-green-400 font-mono">
+                    <td className="px-3 py-2 text-xs text-brand font-mono">
                       {job.logs?.length ? (
                         <div className="max-h-32 overflow-y-auto space-y-1">
                           {job.logs.slice(0, 50).map((l: string, i: number) => (

@@ -55,7 +55,7 @@ const ChatListItem = memo(
                 e.stopPropagation();
                 onEditSave(item.thread_id, editContent);
               }}
-              className="text-muted-foreground/60 hover:text-green-500 transition-colors"
+              className="text-muted-foreground/60 hover:text-brand transition-colors"
             >
               <CheckIcon size={16} />
             </button>

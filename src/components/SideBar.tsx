@@ -181,10 +181,10 @@ export default function SideBar({ onTemplateSelect }: SideBarProps) {
           <div className="px-3">
             <Button
               onClick={() => router.push("/ask?tool=deployer")}
-              className="w-full rounded mb-2 border  text-green-950 border-muted-foreground bg-green-500 hover:bg-green-600 cursor-pointer"
+              className="w-full rounded mb-2 border text-brand-foreground border-muted-foreground bg-brand hover:bg-brand/90 cursor-pointer"
             >
               nosana deployer
-              <Rocket className="text-green-800" />
+              <Rocket className="text-brand-foreground" />
             </Button>
           </div>
         )}

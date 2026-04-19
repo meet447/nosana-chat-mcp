@@ -21,7 +21,7 @@ const PermissionRequest = ({
           <Button
             size="sm"
             variant="outline"
-            className="h-6 text-xs text-green-600 border-green-500/40"
+            className="h-6 text-xs text-brand border-brand/40"
             onClick={onAllow}
           >
             Allow

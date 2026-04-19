@@ -39,7 +39,7 @@ export const SubmitButton: React.FC<SubmitButtonProps> = ({
         "flex cursor-pointer items-center justify-center rounded bg-muted-foreground/10 p-2 text-muted-foreground/80 transition",
         !isDisabled && !isLoading ? "opacity-100 hover:bg-muted-foreground/20" : "opacity-50",
         className,
-        mcp && "rounded-none bg-green-600 hover:bg-green-500"
+        mcp && "bg-brand text-brand-foreground hover:bg-brand/90"
       )}
     >
       {isLoading ? (

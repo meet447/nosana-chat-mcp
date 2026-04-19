@@ -44,12 +44,12 @@ const CustomPromptTab = () => {
         id="custom-prompt-textarea"
         value={customPrompt}
         onChange={(e) => setCustomPrompt(e.target.value)}
-        className="border border-muted-foreground/20 bg-background/30 h-52 rounded-lg p-3 w-full resize-none focus:outline-none focus:ring-2 focus:ring-green-500/50 transition-colors"
+        className="border border-muted-foreground/20 bg-background/30 h-52 rounded-lg p-3 w-full resize-none focus:outline-none focus:ring-2 focus:ring-brand/50 transition-colors"
         placeholder="Enter your custom prompt here..."
       />
       <button
         onClick={handleSaveCustomPrompt}
-        className="bg-green-500 text-white py-2 rounded w-full hover:bg-green-600 cursor-pointer transition-colors font-medium"
+        className="bg-brand text-brand-foreground py-2 rounded w-full hover:bg-brand/90 cursor-pointer transition-colors font-medium"
       >
         Save Prompt
       </button>
@@ -273,17 +273,17 @@ const CustomConfigsTab = () => {
                     truncateFrom: context?.truncateFrom === 'end' ? 'start' : 'end'
                   });
                 }}
-                className="cursor-pointer data-[state=unchecked]:bg-muted-foreground/30 data-[state=checked]:bg-green-500"
-              />
-            </div>
-            <p className="text-xs text-muted-foreground">Where to truncate if context exceeds max</p>
+                className="cursor-pointer data-[state=unchecked]:bg-muted-foreground/30 data-[state=checked]:bg-brand"
+                />
+              </div>
+              <p className="text-xs text-muted-foreground">Where to truncate if context exceeds max</p>
           </div>
         </div>
       </div>
 
       <button
         onClick={handleSaveAIConfig}
-        className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 cursor-pointer transition-colors font-medium mt-2"
+        className="bg-brand text-brand-foreground px-4 py-2 rounded hover:bg-brand/90 cursor-pointer transition-colors font-medium mt-2"
       >
         Save Configuration
       </button>
@@ -338,7 +338,7 @@ const AdditionalSettingsTab = () => {
                 toggleSetting(setting.id, checked);
               }
             }}
-            className="cursor-pointer data-[state=unchecked]:bg-muted-foreground/30 data-[state=checked]:bg-green-500"
+            className="cursor-pointer data-[state=unchecked]:bg-muted-foreground/30 data-[state=checked]:bg-brand"
           />
         </div>
       ))}
@@ -396,7 +396,7 @@ const ApiKeyField = ({ label, storageKey, placeholder, pingModel }: ApiKeyFieldP
         />
         <button
           onClick={handleSave}
-          className="px-4 py-2 cursor-pointer bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors font-medium whitespace-nowrap"
+          className="px-4 py-2 cursor-pointer bg-brand text-brand-foreground rounded-lg hover:bg-brand/90 transition-colors font-medium whitespace-nowrap"
         >
           Save
         </button>

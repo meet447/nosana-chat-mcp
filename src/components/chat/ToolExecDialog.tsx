@@ -145,7 +145,7 @@ export function ToolExecDialog() {
             <Button
               variant="outline"
               onClick={saveEdit}
-              className="flex-1 text-green-600 border-green-500 hover:bg-green-50"
+              className="flex-1 text-brand border-brand hover:bg-brand/10"
             >
               <SaveIcon className="h-4 w-4 mr-2" /> Save
             </Button>

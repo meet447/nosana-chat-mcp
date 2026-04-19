@@ -34,7 +34,7 @@ const SidebarHeader = ({
             className="w-6 h-6 aspect-square cursor-pointer"
           />
           <div className="flex gap-1 items-baseline">
-            <span className="text-xl text-green-500 font-bold">NOSANA</span>
+            <span className="text-xl text-brand font-bold">NOSANA</span>
             <span className="text-foreground">Chat</span>
           </div>
         </Link>

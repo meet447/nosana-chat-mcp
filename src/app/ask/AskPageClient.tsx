@@ -157,73 +157,63 @@ function AskPage() {
         <div
           className={cn(
             "flex flex-1 flex-col items-center justify-center px-4 pb-32 pt-16 sm:px-6 md:pb-20",
-            mcp ? "pt-0" : "",
+            mcp && "pt-0",
           )}
         >
           <div className="flex w-full flex-col items-center md:-translate-y-6">
-            <div
-              className={cn(
-                "text-center text-2xl sm:text-3xl font-sans mb-6 font-extralight",
-                !mcp && "bg-gradient-to-r text-transparent bg-clip-text",
+            <div className="mb-8 text-center">
+              {mcp ? (
+                <div className="flex flex-col items-center gap-2">
+                  <div className="inline-flex items-center gap-2 rounded-full border border-brand/30 bg-brand/10 px-3 py-1 text-[11px] font-medium uppercase tracking-[0.2em] text-brand">
+                    Deployer mode
+                  </div>
+                  <h1 className="text-3xl font-extralight text-foreground sm:text-4xl">
+                    <span className="font-bold text-brand">NOSANA</span>
+                    <span className="mx-2 text-muted-foreground/40">·</span>
+                    <span className="text-muted-foreground">Deployer</span>
+                  </h1>
+                  <p className="max-w-md text-sm text-muted-foreground/80">
+                    Deploy and manage models on the Nosana network through
+                    natural language.
+                  </p>
+                </div>
+              ) : (
+                <h1 className="text-2xl font-extralight text-foreground sm:text-3xl">
+                  <span className="font-bold">Hey</span>, how may I assist you
+                  today?
+                </h1>
               )}
-            >
-              <div className="text-center text-2xl sm:text-3xl font-sans font-extralight">
-                {mcp ? (
-                  <div className="text-foreground gap-3 text-4xl">
-                    <div className="flex gap-2 items-center">
-                      <span className="font-bold text-green-500">NOSANA</span>,
-                      <span className="font-bold text-muted-foreground">
-                        Deployer
-                      </span>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="text-foreground">
-                    <span className="font-bold">Hey</span>, How May I assist you
-                    Today?
-                  </div>
-                )}
-              </div>
             </div>
 
-            <AskForm {...formProps} className="mt-8 hidden md:flex" />
+            <AskForm {...formProps} className="mt-4 hidden md:flex" />
 
-            <div className="mt-5 grid w-full max-w-[800px] grid-cols-1 gap-4 sm:w-[80vw] sm:grid-cols-2 md:w-[70vw] lg:w-[60vw] lg:grid-cols-3 xl:w-[50vw]">
-              {displayedQuestions.map((q, index) => (
-                <div
+            <div className="mt-8 grid w-full max-w-[800px] grid-cols-1 gap-3 sm:w-[80vw] sm:grid-cols-2 md:w-[70vw] lg:w-[60vw] lg:grid-cols-3 xl:w-[50vw]">
+              {displayedQuestions.map((q) => (
+                <button
+                  type="button"
                   key={q.id}
                   onClick={() => {
                     setInput(q.text);
                     textref.current?.focus();
                   }}
-                  role="button"
-                  tabIndex={0}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" || e.key === " ") {
-                      setInput(q.text);
-                      textref.current?.focus();
-                      e.preventDefault();
-                    }
-                  }}
                   className={cn(
-                    "mb-2 flex h-auto min-h-24 select-none flex-row items-center gap-4 rounded-lg border border-transparent bg-muted/30 p-3 text-muted-foreground shadow-md transition-all duration-150 sm:h-full sm:flex-col sm:items-start sm:gap-0",
-                    index >= 2 ? "sm:hover:scale-105" : "hover:scale-105",
-                    "hover:bg-muted-foreground/10",
-                    mcp && "border-2 rounded-none shadow-[4px_4px_0_#2f2e2a]",
+                    "group flex min-h-[7.5rem] select-none flex-col items-start gap-3 rounded-xl border border-border/60 bg-muted/40 p-4 text-left shadow-sm transition-all duration-200",
+                    "hover:-translate-y-0.5 hover:border-brand/40 hover:bg-muted/70 hover:shadow-md",
+                    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50 focus-visible:ring-offset-2 focus-visible:ring-offset-background",
                   )}
                 >
-                  <div className={cn("sm:mb-5 text-green-500")}>{q.Icon}</div>
+                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-brand/10 text-brand transition-colors group-hover:bg-brand/15 [&>svg]:h-[22px] [&>svg]:w-[22px]">
+                    {q.Icon}
+                  </div>
                   <div className="w-full">
-                    {q.topic}
-                    <div
-                      className={cn(
-                        "text-xs mt-1 w-full text-muted-foreground/50",
-                      )}
-                    >
+                    <div className="text-sm font-medium text-foreground">
+                      {q.topic}
+                    </div>
+                    <div className="mt-1 line-clamp-2 text-xs text-muted-foreground">
                       {q.text}
                     </div>
                   </div>
-                </div>
+                </button>
               ))}
             </div>
           </div>
